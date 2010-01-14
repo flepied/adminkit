@@ -1,0 +1,35 @@
+#!/usr/bin/python
+#---------------------------------------------------------------
+# Project         : Mandrakelinux
+# Module          : adminkit
+# File            : adminkit
+# Version         : $Id$
+# Author          : Frederic Lepied
+# Created On      : Sun Feb 20 20:42:42 2005
+# Purpose         : main script to execute the adminkit rules.
+#---------------------------------------------------------------
+
+
+import os
+import sys
+
+try:
+    from adminkit import *
+except:
+    sys.path = ['/var/lib/adminkit'] + sys.path
+    from adminkit import *
+
+init()
+
+CFGDIR = init()
+CFGFILE = os.path.join(CFGDIR, 'adminkit.conf')
+
+# safety check
+if not os.path.isfile(CFGFILE):
+    sys.exit(0)
+
+execfile(CFGFILE)
+
+finalize()
+
+# adminkit ends here

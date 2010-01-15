@@ -23,6 +23,7 @@ _DEBUG = False
 
 _SHORT = False
 _HOST = False
+_DOMAIN = ''
 _VARS = {}
 _ROLES = []
 _ROOT = '/var/lib/adminkit'
@@ -30,6 +31,9 @@ _DEST = '/'
 _OS = False
 _FILES = []
 _SERVICES = {}
+_SYSTEM = ''
+_CODE = ''
+_DEFAULT_DOMAIN = False
 
 class Template(string.Template):
     delimiter = '@'
@@ -37,15 +41,30 @@ class Template(string.Template):
 def detect_os():
     return 'debian'
 
+def define_domain(dom):
+    global _DEFAULT_DOMAIN
+
+    _DEFAULT_DOMAIN = dom
+
+    return _DEFAULT_DOMAIN
+
 def add_var(host, name, val):
-    if host == _SHORT:
+    global _VARS
+    
+    if '.' not in host:
+        host = host + '.' + _DEFAULT_DOMAIN
+    if host == _HOST:
         _VARS[name] = val
     
 def add_role(host, cl):
-    global _SHORT
+    global _HOST, _ROLES
     
-    if host == _SHORT:
-        _ROLES.append(cl)
+    if '.' not in host:
+        host = host + '.' + _DEFAULT_DOMAIN
+
+    if host == _HOST:
+        if cl not in _ROLES:
+            _ROLES.append(cl)
 
 def findfile(filename, path, vars):
     basename = os.path.join(path, filename[1:])
@@ -84,7 +103,7 @@ def is_newer(f1, f2):
 def finalize():
     path = []
     for p in _VARS.values() + _ROLES + ['']:
-        path.append(os.path.join(_ROOT, 'rules', p))
+        path.append(os.path.join(_ROOT, 'roles', p))
     if _DEBUG:
         print path
         for c in _VARS.keys():
@@ -131,25 +150,38 @@ def finalize():
             pass
         
 def usage():
-    print "%s [-h|-H <hostname>|-C <role:value>]" % sys.argv[0]
+    print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-c <configfile>|-d]" % sys.argv[0]
     
 # process command line
 
 def init():
-    global _OS, _SHORT, _DOMAIN, _HOST, _ROOT, _DEST
+    global _OS, _SHORT, _DOMAIN, _HOST, _ROOT, _DEST, _SYSTEM, _DEBUG, _CODE
     
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "dhc:H:r:R:D:",
-                                   ["debug", "help", "config=", "hostname=", 'role=', 'root=', 'dest='])
+        opts, args = getopt.getopt(sys.argv[1:], "dhc:H:r:R:D:V:",
+                                   ["debug", "help", "config=", "hostname=", 'role=', 'root=', 'dest=', 'var='])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
         usage()
         sys.exit(2)
 
-    cfgdir = '/etc/adminkit'
-    output = None
-    verbose = False
+    cfgdir = '/var/lib/adminkit'
+
+    _OS = detect_os()
+    _HOST = socket.gethostname()
+    _SHORT = _HOST.split('.')[0]
+    _DOMAIN = _HOST.split('.', 1)[1]
+    _SYSTEM = os.uname()[0].lower()
+    _CODE = '%s-%s' % (_OS, commands.getoutput("lsb_release -c|sed 's/Codename:\s*//'"))
+    
+    add_var(_HOST, 'shortname', _SHORT)
+    add_var(_HOST, 'hostname', _HOST)
+    add_var(_HOST, 'domainname', _DOMAIN)
+    add_var(_HOST, 'osname', _OS)
+    add_var(_HOST, 'sysname', _SYSTEM)
+    add_var(_HOST, 'oscode', _CODE)
+
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
@@ -158,9 +190,11 @@ def init():
             _DEBUG = True
         elif o in ("-H", "--hostname"):
             _HOST = a
-        elif o in ("-r", "--role"):
+        elif o in ("-V", "--var"):
             k,v = a.split(':', 1)
-            add_var(k, v)
+            add_var(_HOST, k, v)
+        elif o in ("-r", "--role"):
+            add_role(_HOST, a)
         elif o in ("-R", "--root"):
             _ROOT = a
         elif o in ("-D", "--dest"):
@@ -169,25 +203,7 @@ def init():
             cfgdir = a
         else:
             assert False, "unhandled option"
-    
-    #_debug = True
-    _debug = False
-
-    if not _OS:
-        _OS = detect_os()
         
-    # Store default values
-    if not _HOST:
-        _HOST = socket.gethostname()
-        
-    _SHORT = _HOST.split('.')[0]
-    _DOMAIN = _HOST.split('.', 1)[1]
-
-    add_var(_SHORT, 'shortname', _SHORT)
-    add_var(_SHORT, 'hostname', _HOST)
-    add_var(_SHORT, 'domainname', _DOMAIN)
-    add_var(_SHORT, 'osname', _OS)
-
     return cfgdir
 
 # adminkit.py ends here

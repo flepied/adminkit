@@ -77,10 +77,11 @@ def findfile(filename, path, vars):
         return basename
     return None
 
-def copyfile(src, dst, vars):
+def copyfile(src, dst, vars, mode):
     content = open(src).read(-1)
     result = Template(content).substitute(vars)
     f = open(dst, 'w')
+    os.chmod(dst, mode)
     f.write(result)
     f.close()
     
@@ -126,12 +127,17 @@ def finalize():
 
     modified = []
     for f in _FILES:
+        if type(f) == type('a'):
+            mode = 0644
+        else:
+            mode = f[1]
+            f = f[0]
         l = findfile(f, os.path.join(_ROOT, 'files'), _VARS.values() + _ROLES)
         t = os.path.join(_DEST, f[1:])
         if l:
             if is_newer(l, t):
                 print 'copying', l, 'to', t
-                copyfile(l, t, _VARS)
+                copyfile(l, t, _VARS, mode)
                 modified.append(f)
             else:
                 if _DEBUG:
@@ -195,7 +201,7 @@ def init():
             k,v = a.split(':', 1)
             add_var(_HOST, k, v)
         elif o in ("-r", "--role"):
-            add_role(_HOST, a)
+            add_roles(_HOST, a)
         elif o in ("-R", "--root"):
             _ROOT = a
         elif o in ("-D", "--dest"):

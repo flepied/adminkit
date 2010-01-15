@@ -16,7 +16,7 @@ import sys
 try:
     from adminkit import *
 except:
-    sys.path = ['/var/lib/adminkit'] + sys.path
+    sys.path = ['/usr/share/adminkit'] + sys.path
     from adminkit import *
 
 init()

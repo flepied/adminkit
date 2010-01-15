@@ -55,16 +55,17 @@ def add_var(host, name, val):
         host = host + '.' + _DEFAULT_DOMAIN
     if host == _HOST:
         _VARS[name] = val
-    
-def add_role(host, cl):
+
+def add_roles(host, *roles):
     global _HOST, _ROLES
     
     if '.' not in host:
         host = host + '.' + _DEFAULT_DOMAIN
 
     if host == _HOST:
-        if cl not in _ROLES:
-            _ROLES.append(cl)
+        for role in roles:
+            if role not in _ROLES:
+                _ROLES.append(role)
 
 def findfile(filename, path, vars):
     basename = os.path.join(path, filename[1:])

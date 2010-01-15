@@ -34,6 +34,8 @@ _SERVICES = {}
 _SYSTEM = ''
 _CODE = ''
 _DEFAULT_DOMAIN = False
+_ACTIONS = []
+_PIDFILE = {}
 
 class Template(string.Template):
     delimiter = '@'
@@ -116,6 +118,9 @@ def import_module(c, path):
         file, pathname, description = imp.find_module(c, path)
         return imp.load_module(c, file, pathname, description)
 
+def check_service_by_pidfile(service, pidfile):
+    _PIDFILE[service] = pidfile
+    
 def finalize():
     # Loading roles
     path = []    
@@ -132,6 +137,7 @@ def finalize():
     # exported functions to be used in role files
     globals = {'add_files': add_files,
                'files_for_service': files_for_service,
+               'check_service_by_pidfile': check_service_by_pidfile,
                }
     
     for c in _ROLES:
@@ -178,7 +184,26 @@ def finalize():
                     print output
         except KeyError:
             pass
-        
+
+    for p in _PIDFILE.keys():
+        restart = False
+        if not os.path.exists(_PIDFILE[p]):
+            restart = True
+        else:
+            file = open(_PIDFILE[p])
+            content = file.read(-1)
+            file.close()
+            if content[-1] == '\n':
+                content = content[:-1]
+            if not os.path.exists('/proc/' + content):
+                restart = True
+        if restart:
+            print 'Restarting service', p
+            status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
+            if status != 0:
+                print 'Error restarting %s:' % p
+                print output
+            
 def usage():
     print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-c <configfile>|-d]" % sys.argv[0]
     

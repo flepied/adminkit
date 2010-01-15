@@ -67,7 +67,7 @@ def add_roles(host, *roles):
             if role not in _ROLES:
                 _ROLES.append(role)
 
-def findfile(filename, path, vars):
+def find_file_with_vars(filename, path, vars):
     basename = os.path.join(path, filename[1:])
     for v in vars:
         fullname = basename + '.' + v
@@ -75,6 +75,13 @@ def findfile(filename, path, vars):
             return fullname
     if os.path.exists(basename):
         return basename
+    return None
+
+def find_file(basename, path):
+    for dir in path:
+        f = os.path.join(dir, basename)
+        if os.path.exists(f):
+            return f
     return None
 
 def copyfile(src, dst, vars, mode):
@@ -102,29 +109,44 @@ def is_newer(f1, f2):
     else:
         return (os.path.getmtime(f1) > os.path.getmtime(f2))
 
+def import_module(c, path):
+    try:
+        return sys.modules[c] # already imported?
+    except KeyError:
+        file, pathname, description = imp.find_module(c, path)
+        return imp.load_module(c, file, pathname, description)
+
 def finalize():
-    path = []
+    # Loading roles
+    path = []    
     for p in _VARS.values() + _ROLES + ['']:
-        path.append(os.path.join(_ROOT, 'roles', p))
+        d = os.path.join(_ROOT, 'roles', p)
+        if os.path.exists(d) and os.path.isdir(d):
+            path.append(d)
+    
     if _DEBUG:
         print path
         for c in _VARS.keys():
             print c, '->', _VARS[c]
+
+    # exported functions to be used in role files
+    globals = {'add_files': add_files,
+               'files_for_service': files_for_service,
+               }
+    
     for c in _ROLES:
         if _DEBUG:
             print 'Loading role', c
-        try:
-            module = sys.modules[c] # already imported?
-        except KeyError:
-            file, pathname, description = imp.find_module(c, path)
-            module = imp.load_module(c, file, pathname, description)
-        
+        f = find_file(c, path)
+        execfile(f, globals)
+    
     if _DEBUG:
         print Template('hostname is @hostname').substitute(_VARS)
         print 'FILES', _FILES
         print 'SERVICES', _SERVICES
         print 'VARIABLES', _VARS
 
+    # Managing files
     modified = []
     for f in _FILES:
         if type(f) == type('a'):
@@ -132,7 +154,7 @@ def finalize():
         else:
             mode = f[1]
             f = f[0]
-        l = findfile(f, os.path.join(_ROOT, 'files'), _VARS.values() + _ROLES)
+        l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), _VARS.values() + _ROLES)
         t = os.path.join(_DEST, f[1:])
         if l:
             if is_newer(l, t):
@@ -145,6 +167,7 @@ def finalize():
         else:
             print 'ERROR', t, 'not found'
 
+    # Managing services
     for f in modified:
         try:
             for s in _SERVICES[f]:

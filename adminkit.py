@@ -99,6 +99,7 @@ def add_files(*files):
     _FILES = _FILES + list(files)
 
 def files_for_service(service, *files):
+    add_files(*files)
     for f in files:
         try:
             _SERVICES[f] = _SERVICES[f] + [service]

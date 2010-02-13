@@ -175,14 +175,17 @@ def finalize():
             print 'ERROR', t, 'not found'
 
     # Managing services
+    reloaded = []
     for f in modified:
         try:
             for s in _SERVICES[f]:
-                print 'reloading service', s
-                status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
-                if status != 0:
-                    print 'Error reloading %s:' % s
-                    print output
+                if s not in reloaded:
+                    reloaded.append(s)
+                    print 'reloading service', s
+                    status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
+                    if status != 0:
+                        print 'Error reloading %s:' % s
+                        print output
         except KeyError:
             pass
 

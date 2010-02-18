@@ -33,6 +33,7 @@ _CODE = ''
 _DEFAULT_DOMAIN = False
 _ACTIONS = []
 _PIDFILE = {}
+_PERMS = []
 
 class Template(string.Template):
     delimiter = '@'
@@ -103,6 +104,10 @@ def files_for_service(service, *files):
         except KeyError:
             _SERVICES[f] = [service]
 
+def check_perms(*files):
+    global _PERMS
+    _PERMS = _PERMS + list(files)
+
 def is_newer(f1, f2):
     if not os.path.exists(f2):
         return True
@@ -136,6 +141,7 @@ def finalize():
     globals = {'add_files': add_files,
                'files_for_service': files_for_service,
                'check_service_by_pidfile': check_service_by_pidfile,
+               'check_perms': check_perms,
                }
     
     for c in _ROLES:
@@ -171,6 +177,16 @@ def finalize():
         else:
             print 'ERROR', t, 'not found'
 
+    for f in _PERMS:
+        try:
+            s = os.stat(f[0])
+            if s[0] & 07777 != f[1]:
+                print 'Changing mode of %s from 0%o to 0%o' % (f[0], s[0] & 07777, f[1])
+                os.chmod(f[0], f[1])
+        except:
+            print 'ERROR changing perms of', f[0], ':'
+            print sys.exc_info()[1]
+    
     # Managing services
     reloaded = []
     for f in modified:

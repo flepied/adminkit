@@ -7,13 +7,10 @@
 # Purpose         : 
 #---------------------------------------------------------------
 
-import shutil
 import os
-import fnmatch
 import string
 import commands
 import re
-import filecmp
 import socket
 import sys
 import getopt

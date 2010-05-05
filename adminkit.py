@@ -87,6 +87,9 @@ def find_file(basename, path):
 def copyfile(src, dst, vars, mode):
     content = open(src).read(-1)
     result = Template(content).substitute(vars)
+    basename = os.path.dirname(dst)
+    if not os.path.exists(basename):
+	os.makedirs(basename)
     f = open(dst, 'w')
     os.chmod(dst, mode)
     f.write(result)

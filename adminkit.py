@@ -1,7 +1,7 @@
 #---------------------------------------------------------------
 # Project         : adminkit
 # File            : adminkit.py
-# Version         : $Id$
+# Copyright       : Splitted-Desktop Systems, 2010
 # Author          : Frederic Lepied
 # Created On      : Mon Jan 11 21:03:44 2010
 # Purpose         : 

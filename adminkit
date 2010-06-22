@@ -1,11 +1,10 @@
 #!/usr/bin/python
 #---------------------------------------------------------------
-# Project         : Mandrakelinux
-# Module          : adminkit
+# Project         : adminkit
 # File            : adminkit
-# Version         : $Id$
+# Copyright       : Splitted-Desktop Systems, 2010
 # Author          : Frederic Lepied
-# Created On      : Sun Feb 20 20:42:42 2005
+# Created On      : Thu Jan 14 23:12:31 2010
 # Purpose         : main script to execute the adminkit rules.
 #---------------------------------------------------------------
 

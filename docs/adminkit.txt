@@ -17,8 +17,10 @@ Philosophy
 AdminKit is a tool to manage systems' configuration. It automates
 system administration tasks. All the configuration descriptions is
 stored in a central directory tree. This tree is copied on all the
-systems by a mean that is outside AdminKit. For example, we use git to
-manage the versionning and distribution of the files.
+systems by a mean that is outside AdminKit. You can use a network file
+system or a distributed revision control for this purpose. For
+example, we use git to manage the versionning and distribution of the
+files for our needs.
 
 Configuration
 =============
@@ -38,24 +40,47 @@ The config files are under the ``files`` sub-directory. You can
 specialized the config file by adding the name of the system or any
 roles or domain.
 
+adminkit.conf
+-------------
+
+``adminkit.conf`` is the entry point of the configuration for your set
+of systems administrated under AdminKit. It describes globally what
+roles are defined for your systems.
+
+``define_domain(<name>)``
+  define the domain name for the hosts used bellow this declaration.
+
+``add_roles(<host>, <name1>, ...)``
+  adds roles for ``<host>``.
+
+``add_var(<host>, <name>, <value>)``
+  define a variable for ``<host>``.
+
+The ``adminkit.conf`` file is in fact a python file so you can use any
+python construct.
+
 Roles
 -----
 
-Roles can use the following directives:
+Roles are defined by files of the same name declared in the
+``adminkit.conf`` file. They are located under the ``roles``
+directory. Role files can use the following directives:
 
-- ``add_files(<file desc>, <file desc> ...)`` add files from the
-  repository to be copied in the system for this role. A ``file
-  desc`` can be a path, a list with a path and a permission.
+``add_files(<file desc>, <file desc> ...)``
+  add files from the repository to be copied in the system for this
+  role. A ``file desc`` can be a path, a list with a path and a
+  permission.
 
-- ``files_for_service(<service>, <file1>, <file2>...)`` defines files
-  that are added like the ``add_files directive`` but in addition, the
-  service is reloaded if any of the files are copied.
+``files_for_service(<service>, <file1>, <file2>...)`` 
+  defines files that are added like the ``add_files directive`` but in
+  addition, the service is reloaded if any of the files are copied.
 
-- ``check_service_by_pidfile(<service>)`` checks if the service is
-  still running else restart it for this role.
+``check_service_by_pidfile(<service>)``
+  checks if the service is still running else restart it for this
+  role.
 
-- ``check_perms((<file>, <perm>), ...)`` enforces permissions of files
-  for this role.
+``check_perms((<file>, <perm>), ...)``
+  enforces permissions of files for this role.
 
 In fact role files are python files so you can use any python
 construct you want.
@@ -70,7 +95,7 @@ variables are automatically defined:
   fully qualified host name.
 
 ``domainname``
-  domain name.
+  domain name without host name.
 
 ``shortname``
   host name without domain.
@@ -82,10 +107,10 @@ variables are automatically defined:
   operating system type (i.e. linux).
 
 ``oscode``
-  operating system code name (i.e. debian-lenny).
+  operating system code name (i.e. lenny).
 
 You can also define variables in the main config file or in the role
-files using the add_var definitions.
+files using the ``add_var`` definitions.
 
 Variables are used in the config files using the @ prefix (for example
 ``@hostname`` or ``@{hostname}``).
@@ -103,7 +128,7 @@ the disk, we have the following directory structure: ::
 
 The ``base`` role defines that a system is under AdminKit control and
 so it has a crontab entry that run the adminkit command every hour and
-be sure that the mailname file is always coherent with the host name.
+it ensures that the mailname file is always coherent with the host name.
 
 Here is the ``adminkit.conf`` file with the assumption that the fqdn
 of host1 is host1.domain.com: ::
@@ -122,3 +147,7 @@ is interesting as we use a variable that will be expanded during the
 copy phase: ::
 
   @hostname
+
+Once we have everything setup, we just have to call the ``adminkit``
+command that runs the checks and takes the needed actions defined in
+``adminkit.conf``.

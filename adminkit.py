@@ -39,7 +39,7 @@ class Template(string.Template):
     delimiter = '@'
 
 def detect_os():
-    return 'debian'
+    return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
 
 def define_domain(dom):
     global _DEFAULT_DOMAIN
@@ -51,7 +51,7 @@ def define_domain(dom):
 def add_var(host, name, val):
     global _VARS
     
-    if '.' not in host:
+    if '.' not in host and _DEFAULT_DOMAIN:
         host = host + '.' + _DEFAULT_DOMAIN
     if host == _HOST:
         _VARS[name] = val
@@ -59,7 +59,7 @@ def add_var(host, name, val):
 def add_roles(host, *roles):
     global _HOST, _ROLES
     
-    if '.' not in host:
+    if '.' not in host and _DEFAULT_DOMAIN:
         host = host + '.' + _DEFAULT_DOMAIN
 
     if host == _HOST:
@@ -223,7 +223,17 @@ def finalize():
             if status != 0:
                 print 'Error restarting %s:' % p
                 print output
-            
+
+def set_root(root):
+    global _ROOT
+
+    _ROOT = root
+
+def set_dest(dest):
+    global _DEST
+
+    _DEST = dest
+
 def usage():
     print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-c <configfile>|-d]" % sys.argv[0]
     
@@ -233,20 +243,22 @@ def init():
     global _OS, _SHORT, _DOMAIN, _HOST, _ROOT, _DEST, _SYSTEM, _DEBUG, _CODE
     
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "dhc:H:r:R:D:V:",
-                                   ["debug", "help", "config=", "hostname=", 'role=', 'root=', 'dest=', 'var='])
+        opts, args = getopt.getopt(sys.argv[1:], "dhH:r:R:D:V:",
+                                   ["debug", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
         usage()
         sys.exit(2)
-
-    cfgdir = '/var/lib/adminkit'
-
+    
     _OS = detect_os()
     _HOST = socket.gethostname()
-    _SHORT = _HOST.split('.')[0]
-    _DOMAIN = _HOST.split('.', 1)[1]
+    h = _HOST.split('.', 1)
+    _SHORT = h[0]
+    if len(h) > 1:
+        _DOMAIN = h[1]
+    else:
+        _DOMAIN = ''
     _SYSTEM = os.uname()[0].lower()
     _CODE = '%s-%s' % (_OS, commands.getoutput("lsb_release -c|sed 's/Codename:\s*//'"))
     
@@ -256,7 +268,7 @@ def init():
     add_var(_HOST, 'osname', _OS)
     add_var(_HOST, 'sysname', _SYSTEM)
     add_var(_HOST, 'oscode', _CODE)
-
+    
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
@@ -270,15 +282,13 @@ def init():
             add_var(_HOST, k, v)
         elif o in ("-r", "--role"):
             add_roles(_HOST, a)
-        elif o in ("-R", "--root"):
-            _ROOT = a
-        elif o in ("-D", "--dest"):
-            _DEST = a
-        elif o in ("-c", "--config"):
-            cfgdir = a
+        elif o in ("-R", "--rootdir"):
+            set_root(a)
+        elif o in ("-D", "--destdir"):
+            set_dest(a)
         else:
             assert False, "unhandled option"
         
-    return cfgdir
+    return _ROOT
 
 # adminkit.py ends here

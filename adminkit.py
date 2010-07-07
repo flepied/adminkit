@@ -4,7 +4,7 @@
 # Copyright       : Splitted-Desktop Systems, 2010
 # Author          : Frederic Lepied
 # Created On      : Mon Jan 11 21:03:44 2010
-# Purpose         : 
+# Purpose         : main functions
 #---------------------------------------------------------------
 
 import os
@@ -41,6 +41,9 @@ class Template(string.Template):
 def detect_os():
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
 
+def detect_os_code():
+    return commands.getoutput("lsb_release -c|sed 's/Codename:\s*//'")
+
 def define_domain(dom):
     global _DEFAULT_DOMAIN
 
@@ -53,6 +56,7 @@ def add_var(host, name, val):
     
     if '.' not in host and _DEFAULT_DOMAIN:
         host = host + '.' + _DEFAULT_DOMAIN
+    
     if host == _HOST:
         _VARS[name] = val
 
@@ -61,7 +65,7 @@ def add_roles(host, *roles):
     
     if '.' not in host and _DEFAULT_DOMAIN:
         host = host + '.' + _DEFAULT_DOMAIN
-
+    
     if host == _HOST:
         for role in roles:
             if role not in _ROLES:
@@ -126,7 +130,7 @@ def import_module(c, path):
 
 def check_service_by_pidfile(service, pidfile):
     _PIDFILE[service] = pidfile
-    
+
 def finalize():
     # Loading roles
     path = []    
@@ -136,10 +140,12 @@ def finalize():
             path.append(d)
     
     if _DEBUG:
-        print path
+        print 'PATH ->', path
         for c in _VARS.keys():
             print c, '->', _VARS[c]
-
+        print 'ROLES ->', _ROLES
+        print 'ROOT ->', _ROOT
+        
     # exported functions to be used in role files
     globals = {'add_files': add_files,
                'files_for_service': files_for_service,
@@ -260,7 +266,7 @@ def init():
     else:
         _DOMAIN = ''
     _SYSTEM = os.uname()[0].lower()
-    _CODE = '%s-%s' % (_OS, commands.getoutput("lsb_release -c|sed 's/Codename:\s*//'"))
+    _CODE = detect_os_code()
     
     add_var(_HOST, 'shortname', _SHORT)
     add_var(_HOST, 'hostname', _HOST)
@@ -288,7 +294,12 @@ def init():
             set_dest(a)
         else:
             assert False, "unhandled option"
-        
-    return _ROOT
+
+    if len(args) == 1:
+        file = os.path.abspath(args[0])
+        set_root(os.path.dirname(file))
+        return file
+    else:
+        return os.path.join(_ROOT, 'adminkit.conf')
 
 # adminkit.py ends here

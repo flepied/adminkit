@@ -75,6 +75,9 @@ directory. Role files can use the following directives:
   defines files that are added like the ``add_files directive`` but in
   addition, the service is reloaded if any of the files are copied.
 
+``add_dirs(<dir1>, <dir2> ...)``
+  create directories.
+
 ``check_service_by_pidfile(<service>)``
   checks if the service is still running else restart it for this
   role.

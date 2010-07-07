@@ -27,6 +27,7 @@ _ROOT = '/var/lib/adminkit'
 _DEST = '/'
 _OS = False
 _FILES = []
+_DIRS = []
 _SERVICES = {}
 _SYSTEM = ''
 _CODE = ''
@@ -111,6 +112,10 @@ def files_for_service(service, *files):
         except KeyError:
             _SERVICES[f] = [service]
 
+def add_dirs(*dirs):
+    global _DIRS
+    _DIRS = _DIRS + list(dirs)
+
 def check_perms(*files):
     global _PERMS
     _PERMS = _PERMS + list(files)
@@ -145,12 +150,14 @@ def finalize():
             print c, '->', _VARS[c]
         print 'ROLES ->', _ROLES
         print 'ROOT ->', _ROOT
+        print 'DEST', _DEST
         
     # exported functions to be used in role files
     globals = {'add_files': add_files,
                'files_for_service': files_for_service,
                'check_service_by_pidfile': check_service_by_pidfile,
                'check_perms': check_perms,
+               'add_dirs': add_dirs,
                }
     
     for c in _ROLES:
@@ -165,6 +172,16 @@ def finalize():
         print 'SERVICES', _SERVICES
         print 'VARIABLES', _VARS
 
+    # Managing directories
+    for d in _DIRS:
+        dir = os.path.join(_DEST, d[1:])
+        if not os.path.isdir(dir):
+            print 'creating directory', dir
+            os.makedirs(dir)
+        else:
+            if _DEBUG:
+                print dir, 'already exists'
+            
     # Managing files
     modified = []
     for f in _FILES:
@@ -241,15 +258,21 @@ def set_dest(dest):
     _DEST = dest
 
 def usage():
-    print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-c <configfile>|-d]" % sys.argv[0]
+    print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-d|<config file>]" % sys.argv[0]
     
 # process command line
 
 def init():
     global _OS, _SHORT, _DOMAIN, _HOST, _ROOT, _DEST, _SYSTEM, _DEBUG, _CODE
-    
+
+    # hack to allow arguments to be passed after the magic #! (they are passed as a single arg)
+    if len(sys.argv) > 1:
+        argv = sys.argv[1].split(' ') + sys.argv[2:]
+    else:
+        argv = sys.argv[1:]
+        
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "dhH:r:R:D:V:",
+        opts, args = getopt.getopt(argv, "dhH:r:R:D:V:",
                                    ["debug", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
     except getopt.GetoptError, err:
         # print help information and exit:

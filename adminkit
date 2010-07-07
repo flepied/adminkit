@@ -18,16 +18,18 @@ except:
     sys.path = ['/usr/share/adminkit'] + sys.path
     from adminkit import *
 
-init()
-
-CFGDIR = init()
-CFGFILE = os.path.join(CFGDIR, 'adminkit.conf')
+CFGFILE = init()
 
 # safety check
 if not os.path.isfile(CFGFILE):
     sys.exit(0)
 
-execfile(CFGFILE)
+globals = {'define_domain': define_domain,
+           'add_var': add_var,
+           'add_roles': add_roles,
+           }
+
+execfile(CFGFILE, globals)
 
 finalize()
 

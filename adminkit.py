@@ -61,6 +61,9 @@ def add_var(host, name, val):
     if host == _HOST:
         _VARS[name] = val
 
+def get_var(name):
+    return _VARS[name]
+
 def add_roles(host, *roles):
     global _HOST, _ROLES
     

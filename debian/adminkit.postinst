@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case "$1" in
+  triggered)
+    if [ -f "/etc/adminkit/adminkit.conf" ]; then
+	adminkit
+    fi
+    ;;  
+esac
+
+exit 0

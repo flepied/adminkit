@@ -1,13 +1,13 @@
 Source: adminkit
 Section: unknown
 Priority: extra
-Maintainer: Frederic Lepied <flepied@splitted-desktop.com>
+Maintainer: Frederic Lepied <fred@lepied.com>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.7.3
 Homepage: <insert the upstream URL, if relevant>
 
 Package: adminkit
 Architecture: all
-Depends: python
+Depends: python, lsb-release
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>

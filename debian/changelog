@@ -1,3 +1,9 @@
+adminkit (0.2) unstable; urgency=low
+
+  * put config files in /etc/adminkit
+
+ -- Frederic Lepied <fred@lepied.com>  Thu, 07 Oct 2010 22:10:26 +0200
+
 adminkit (0.1) unstable; urgency=low
 
   * Initial Release.

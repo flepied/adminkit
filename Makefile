@@ -1,4 +1,4 @@
-CFGDIR=/etc/adminkit
+CFGDIR=/var/lib/adminkit
 
 all:
 

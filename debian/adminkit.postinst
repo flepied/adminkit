@@ -2,7 +2,7 @@
 
 case "$1" in
   triggered)
-    if [ -f "/etc/adminkit/adminkit.conf" ]; then
+    if [ -f "/var/lib/adminkit/adminkit.conf" ]; then
 	adminkit
     fi
     ;;  

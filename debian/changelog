@@ -1,3 +1,10 @@
+adminkit (0.4) unstable; urgency=low
+
+  * switch to jinja2 for the templating engine to have a more powerful
+    engine (loop...)
+
+ -- Frederic Lepied <fred@lepied.com>  Sat, 09 Oct 2010 23:19:53 +0200
+
 adminkit (0.3) unstable; urgency=low
 
   * add the add_to_list function

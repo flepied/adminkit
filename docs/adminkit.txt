@@ -56,6 +56,12 @@ roles are defined for your systems.
 ``add_var(<host>, <name>, <value>)``
   define a variable for ``<host>``.
 
+``add_to_list(<host>, <name>, <value>)``
+  add a ``<value>`` to the list ``<name>`` for ``<host>``.
+
+``get_var(<name>)``
+  return the value of variable ``<name>``.
+
 The ``adminkit.conf`` file is in fact a python file so you can use any
 python construct.
 
@@ -84,6 +90,15 @@ directory. Role files can use the following directives:
 
 ``check_perms((<file>, <perm>), ...)``
   enforces permissions of files for this role.
+
+``add_var(<name>, <value>)``
+  define a variable.
+
+``add_to_list(<name>, <value>)``
+  add a ``<value>`` to the list ``<name>``.
+
+``get_var(<name>)``
+  return the value of variable ``<name>``.
 
 In fact role files are python files so you can use any python
 construct you want.

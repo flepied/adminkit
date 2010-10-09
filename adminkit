@@ -25,7 +25,8 @@ if not os.path.isfile(CFGFILE):
     sys.exit(0)
 
 globals = {'define_domain': define_domain,
-           'add_var': add_var,
+           'add_var': add_var_host,
+           'add_to_list': add_to_list_host,
            'get_var': get_var,
            'add_roles': add_roles,
            }

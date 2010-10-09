@@ -16,6 +16,8 @@ import sys
 import getopt
 import imp
 
+STRING_TYPE = type('e')
+
 _DEBUG = False
 
 _SHORT = False
@@ -52,14 +54,32 @@ def define_domain(dom):
 
     return _DEFAULT_DOMAIN
 
-def add_var(host, name, val):
+def add_var_host(host, name, val):
     global _VARS
     
     if '.' not in host and _DEFAULT_DOMAIN:
         host = host + '.' + _DEFAULT_DOMAIN
     
     if host == _HOST:
-        _VARS[name] = val
+        add_var(name, val)
+
+def add_var(name, val):
+    _VARS[name] = val
+    
+def add_to_list_host(host, name, val):
+    global _VARS
+    
+    if '.' not in host and _DEFAULT_DOMAIN:
+        host = host + '.' + _DEFAULT_DOMAIN
+    
+    if host == _HOST:
+        add_to_list(name, val)
+        
+def add_to_list(name, val):
+    try:
+        _VARS[name].append(val)
+    except KeyError:
+        _VARS[name] = [val,]
 
 def get_var(name):
     return _VARS[name]
@@ -142,7 +162,11 @@ def check_service_by_pidfile(service, pidfile):
 def finalize():
     # Loading roles
     path = []    
+    strings = []
     for p in _VARS.values() + _ROLES + ['']:
+        if not type(p) == STRING_TYPE:
+            continue
+        strings.append(p)
         d = os.path.join(_ROOT, 'roles', p)
         if os.path.exists(d) and os.path.isdir(d):
             path.append(d)
@@ -161,6 +185,9 @@ def finalize():
                'check_service_by_pidfile': check_service_by_pidfile,
                'check_perms': check_perms,
                'add_dirs': add_dirs,
+               'add_var': add_var,
+               'add_to_list': add_to_list,
+               'get_var': get_var,
                }
     
     for c in _ROLES:
@@ -193,7 +220,7 @@ def finalize():
         else:
             mode = f[1]
             f = f[0]
-        l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), _VARS.values() + _ROLES)
+        l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), strings + _ROLES)
         t = os.path.join(_DEST, f[1:])
         if l:
             if is_newer(l, t):
@@ -294,12 +321,12 @@ def init():
     _SYSTEM = os.uname()[0].lower()
     _CODE = detect_os_code()
     
-    add_var(_HOST, 'shortname', _SHORT)
-    add_var(_HOST, 'hostname', _HOST)
-    add_var(_HOST, 'domainname', _DOMAIN)
-    add_var(_HOST, 'osname', _OS)
-    add_var(_HOST, 'sysname', _SYSTEM)
-    add_var(_HOST, 'oscode', _CODE)
+    add_var('shortname', _SHORT)
+    add_var('hostname', _HOST)
+    add_var('domainname', _DOMAIN)
+    add_var('osname', _OS)
+    add_var('sysname', _SYSTEM)
+    add_var('oscode', _CODE)
     
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -311,7 +338,7 @@ def init():
             _HOST = a
         elif o in ("-V", "--var"):
             k,v = a.split(':', 1)
-            add_var(_HOST, k, v)
+            add_var(k, v)
         elif o in ("-r", "--role"):
             add_roles(_HOST, a)
         elif o in ("-R", "--rootdir"):

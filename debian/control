@@ -8,6 +8,6 @@ Homepage: <insert the upstream URL, if relevant>
 
 Package: adminkit
 Architecture: all
-Depends: python, lsb-release
+Depends: python, lsb-release, python-jinja2
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>

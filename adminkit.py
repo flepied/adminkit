@@ -16,6 +16,10 @@ import sys
 import getopt
 import imp
 
+from jinja2 import Environment
+
+_ENV = Environment()
+
 STRING_TYPE = type('e')
 
 _DEBUG = False
@@ -37,9 +41,6 @@ _DEFAULT_DOMAIN = False
 _ACTIONS = []
 _PIDFILE = {}
 _PERMS = []
-
-class Template(string.Template):
-    delimiter = '@'
 
 def detect_os():
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
@@ -114,7 +115,8 @@ def find_file(basename, path):
 
 def copyfile(src, dst, vars, mode):
     content = open(src).read(-1)
-    result = Template(content).substitute(vars)
+    template = _ENV.from_string(content)
+    result = template.render(vars)
     basename = os.path.dirname(dst)
     if not os.path.exists(basename):
 	os.makedirs(basename)
@@ -197,7 +199,7 @@ def finalize():
         execfile(f, globals)
     
     if _DEBUG:
-        print Template('hostname is @hostname').substitute(_VARS)
+        print _ENV.from_string('hostname is {{ hostname }}').render(_VARS)
         print 'FILES', _FILES
         print 'SERVICES', _SERVICES
         print 'VARIABLES', _VARS

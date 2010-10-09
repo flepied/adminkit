@@ -1,3 +1,11 @@
+adminkit (0.3) unstable; urgency=low
+
+  * add the add_to_list function
+  * make the variable manipulation functions available to the roles too
+  * put back the files in /var/lib/adminkit
+
+ -- Frederic Lepied <fred@lepied.com>  Sat, 09 Oct 2010 21:13:04 +0200
+
 adminkit (0.2) unstable; urgency=low
 
   * put config files in /etc/adminkit

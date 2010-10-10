@@ -5,6 +5,7 @@ all:
 install:
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/share/adminkit \
 	$(DESTDIR)$(CFGDIR)/roles $(DESTDIR)$(CFGDIR)/files \
+	$(DESTDIR)$(CFGDIR)/once \
 	$(DESTDIR)$(CFGDIR)/adminkit.conf.d
 	install adminkit $(DESTDIR)/usr/bin/
 	install -m 644 adminkit.py $(DESTDIR)/usr/share/adminkit/

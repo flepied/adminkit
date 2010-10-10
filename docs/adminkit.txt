@@ -100,6 +100,12 @@ directory. Role files can use the following directives:
 ``get_var(<name>)``
   return the value of variable ``<name>``.
 
+``run_once(<command>)``
+  runs the ``<command>`` only once.
+
+``files_to_command(<command>, <regexp>, ...)``
+  when a file matching ``<regexp>`` is modified, run the ``<command>``.
+  
 In fact role files are python files so you can use any python
 construct you want.
 
@@ -130,8 +136,8 @@ variables are automatically defined:
 You can also define variables in the main config file or in the role
 files using the ``add_var`` definitions.
 
-Variables are used in the config files using the @ prefix (for example
-``@hostname`` or ``@{hostname}``).
+Variables are used in the config files using the jinja2 conventions (for example
+ ``{{ hostname }}``).
 
 Example
 -------
@@ -164,7 +170,7 @@ The file ``/var/lib/adminkit/files/etc/mailname`` will be copied to
 is interesting as we use a variable that will be expanded during the
 copy phase: ::
 
-  @hostname
+  {{ hostname }}
 
 Once we have everything setup, we just have to call the ``adminkit``
 command that runs the checks and takes the needed actions defined in

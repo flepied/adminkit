@@ -15,6 +15,7 @@ import socket
 import sys
 import getopt
 import imp
+import hashlib
 
 from jinja2 import Environment
 
@@ -41,6 +42,9 @@ _DEFAULT_DOMAIN = False
 _ACTIONS = []
 _PIDFILE = {}
 _PERMS = []
+_ONCE = []
+_COMMANDS = {}
+_ONCE_DIR = os.path.join(_ROOT, 'once')
 
 def detect_os():
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
@@ -145,6 +149,15 @@ def check_perms(*files):
     global _PERMS
     _PERMS = _PERMS + list(files)
 
+def run_once(command):
+    global _ONCE
+    _ONCE.append(command)
+
+def files_to_command(command, *list):
+    global _COMMANDS
+    for r in list:
+        _COMMANDS[re.compile(r)] = command
+
 def is_newer(f1, f2):
     if not os.path.exists(f2):
         return True
@@ -179,7 +192,7 @@ def finalize():
             print c, '->', _VARS[c]
         print 'ROLES ->', _ROLES
         print 'ROOT ->', _ROOT
-        print 'DEST', _DEST
+        print 'DEST ->', _DEST
         
     # exported functions to be used in role files
     globals = {'add_files': add_files,
@@ -190,6 +203,8 @@ def finalize():
                'add_var': add_var,
                'add_to_list': add_to_list,
                'get_var': get_var,
+               'run_once': run_once,
+               'files_for_service': files_for_service,
                }
     
     for c in _ROLES:
@@ -203,6 +218,7 @@ def finalize():
         print 'FILES', _FILES
         print 'SERVICES', _SERVICES
         print 'VARIABLES', _VARS
+        print 'ONCE', _ONCE
 
     # Managing directories
     for d in _DIRS:
@@ -257,6 +273,14 @@ def finalize():
                     if status != 0:
                         print 'Error reloading %s:' % s
                         print output
+            for r in _COMMANDS.keys():
+                if r.search(f):
+                    cmd = _COMMANDS[r]
+                    print 'launching command', s, 'for', f
+                    status, output = commands.getstatusoutput(cmd)
+                    if status != 0:
+                        print 'Error reloading %s:' % cmd
+                        print output
         except KeyError:
             pass
 
@@ -278,7 +302,18 @@ def finalize():
             if status != 0:
                 print 'Error restarting %s:' % p
                 print output
-
+    for cmd in _ONCE:
+        hash = hashlib.sha1(cmd).hexdigest()
+        f = os.path.join(_ONCE_DIR, hash)
+        if not os.path.exists(f):
+            print 'Running once', cmd
+            status, output = commands.getstatusoutput(cmd)
+            if status == 0:
+                open(f, 'w').close()
+            else:
+                print 'Error running once %s:' % cmd
+                print output
+                    
 def set_root(root):
     global _ROOT
 

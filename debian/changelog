@@ -1,3 +1,9 @@
+adminkit (0.5) unstable; urgency=low
+
+  * added run_once and files_to_command functions for roles
+
+ -- Frederic Lepied <fred@lepied.com>  Sun, 10 Oct 2010 14:06:12 +0200
+
 adminkit (0.4) unstable; urgency=low
 
   * switch to jinja2 for the templating engine to have a more powerful

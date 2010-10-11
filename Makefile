@@ -1,6 +1,7 @@
 CFGDIR=/var/lib/adminkit
 
 all:
+	cd docs; make html
 
 install:
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/share/adminkit \
@@ -14,3 +15,4 @@ install:
 
 clean:
 	rm -f *~ *.pyc
+	cd docs; make clean

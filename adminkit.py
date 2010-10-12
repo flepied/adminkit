@@ -121,9 +121,9 @@ def copyfile(src, dst, vars, mode):
     content = open(src).read(-1)
     template = _ENV.from_string(content)
     result = template.render(vars)
-    basename = os.path.dirname(dst)
-    if not os.path.exists(basename):
-	os.makedirs(basename)
+    basedir = os.path.dirname(dst)
+    if not os.path.exists(basedir):
+	os.makedirs(basedir)
     f = open(dst, 'w')
     os.chmod(dst, mode)
     f.write(result)
@@ -233,7 +233,7 @@ def finalize():
     # Managing files
     modified = []
     for f in _FILES:
-        if type(f) == type('a'):
+        if type(f) == STRING_TYPE:
             mode = 0644
         else:
             mode = f[1]

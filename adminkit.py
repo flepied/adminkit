@@ -45,6 +45,7 @@ _PERMS = []
 _ONCE = []
 _COMMANDS = {}
 _ONCE_DIR = os.path.join(_ROOT, 'once')
+_VARS_FILE = os.path.join(_ROOT, 'vars')
 
 def detect_os():
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
@@ -164,6 +165,25 @@ def is_newer(f1, f2):
     else:
         return (os.path.getmtime(f1) > os.path.getmtime(f2))
 
+def check_vars(vars, path):
+    '''checks that vars has not changed. A checksum is compared to the content
+    of the file pointed by path. If the content has changed, the file is rewritten
+    with the new checksum.'''
+    s = hashlib.sha1(str(vars)).hexdigest()
+    if os.path.exists(path):
+        f = open(path)
+        s2 = f.read(-1)
+        f.close()
+    else:
+        s2 = None
+    if s != s2:
+        f = open(path, 'w')
+        f.write(s)
+        f.close()
+        return False
+    else:
+        return True
+
 def import_module(c, path):
     try:
         return sys.modules[c] # already imported?
@@ -231,6 +251,7 @@ def finalize():
                 print dir, 'already exists'
             
     # Managing files
+    check_vars(_VARS, _VARS_FILE)
     modified = []
     for f in _FILES:
         if type(f) == STRING_TYPE:
@@ -241,7 +262,7 @@ def finalize():
         l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), strings + _ROLES)
         t = os.path.join(_DEST, f[1:])
         if l:
-            if is_newer(l, t):
+            if is_newer(l, t) or is_newer(_VARS_FILE, t):
                 print 'copying', l, 'to', t
                 copyfile(l, t, _VARS, mode)
                 modified.append(f)

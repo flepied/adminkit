@@ -1,3 +1,10 @@
+adminkit (0.6) unstable; urgency=low
+
+  * to calculate if the a file needs to be regenerated check also if the
+    variables have changed.
+
+ -- Frederic Lepied <fred@lepied.com>  Tue, 12 Oct 2010 08:27:46 +0200
+
 adminkit (0.5) unstable; urgency=low
 
   * added run_once and files_to_command functions for roles

@@ -88,8 +88,11 @@ def add_to_list(name, val):
         _VARS[name] = [val,]
 
 def get_var(name):
-    return _VARS[name]
-
+    try:
+        return _VARS[name]
+    except KeyError:
+        return None
+    
 def add_roles(host, *roles):
     global _HOST, _ROLES
     

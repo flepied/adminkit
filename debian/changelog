@@ -1,6 +1,13 @@
+adminkit (0.7) unstable; urgency=low
+
+  * copyfile: write a new file only if the content has changed
+  * get_var: return None if a variable is not defined
+  
+ -- Frederic Lepied <fred@lepied.com>  Sun, 17 Oct 2010 11:59:09 +0200
+
 adminkit (0.6) unstable; urgency=low
 
-  * to calculate if the a file needs to be regenerated check also if the
+  * to calculate if a file needs to be regenerated checks also if the
     variables have changed.
 
  -- Frederic Lepied <fred@lepied.com>  Tue, 12 Oct 2010 08:27:46 +0200

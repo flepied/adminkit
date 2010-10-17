@@ -2,6 +2,7 @@
 # Project         : adminkit
 # File            : adminkit.py
 # Copyright       : Splitted-Desktop Systems, 2010
+#                   Frederic Lepied, 2010
 # Author          : Frederic Lepied
 # Created On      : Mon Jan 11 21:03:44 2010
 # Purpose         : main functions
@@ -122,17 +123,39 @@ def find_file(basename, path):
     return None
 
 def copyfile(src, dst, vars, mode):
+    '''Instanciate a template and write it to a new file.
+
+    Arguments:
+    src: path to the jinja2 template
+    dst: path to the destination file
+    vars: associative array representing the variables to expand in the template
+    mode: permissions for the destination file
+    
+    Return value: boolean to indicate if the content has changed or not
+    
+    If the content has not changed, the destination file has just its
+    access and modifed date changed.
+    '''
+    if os.path.exists(dst):
+        orig = open(dst).read(-1)
+    else:
+        orig = None
     content = open(src).read(-1)
     template = _ENV.from_string(content)
     result = template.render(vars)
     basedir = os.path.dirname(dst)
     if not os.path.exists(basedir):
 	os.makedirs(basedir)
-    f = open(dst, 'w')
-    os.chmod(dst, mode)
-    f.write(result)
-    f.close()
-    
+    if result == orig:
+        os.utime(dst, None)
+        return False
+    else:
+        f = open(dst, 'w')
+        os.chmod(dst, mode)
+        f.write(result)
+        f.close()
+        return True
+
 def add_files(*files):
     global _FILES
     _FILES = _FILES + list(files)
@@ -266,9 +289,11 @@ def finalize():
         t = os.path.join(_DEST, f[1:])
         if l:
             if is_newer(l, t) or is_newer(_VARS_FILE, t):
-                print 'copying', l, 'to', t
-                copyfile(l, t, _VARS, mode)
-                modified.append(f)
+                if copyfile(l, t, _VARS, mode):
+                    modified.append(f)
+                    print 'copied', l, 'to', t
+                else:
+                    print 'touched', t
             else:
                 if _DEBUG:
                     print l, 'not newer than', t

@@ -17,6 +17,8 @@ import sys
 import getopt
 import imp
 import hashlib
+import pwd
+import grp
 
 from jinja2 import Environment
 
@@ -122,7 +124,7 @@ def find_file(basename, path):
             return f
     return None
 
-def copyfile(src, dst, vars, mode):
+def copyfile(src, dst, vars, mode, uid, gid):
     '''Instanciate a template and write it to a new file.
 
     Arguments:
@@ -130,6 +132,8 @@ def copyfile(src, dst, vars, mode):
     dst: path to the destination file
     vars: associative array representing the variables to expand in the template
     mode: permissions for the destination file
+    uid: user id
+    gid: group id
     
     Return value: boolean to indicate if the content has changed or not
     
@@ -152,6 +156,8 @@ def copyfile(src, dst, vars, mode):
     else:
         f = open(dst, 'w')
         os.chmod(dst, mode)
+        if uid != -1 or gid != -1:
+            os.chown(dst, uid, gid)
         f.write(result)
         f.close()
         return True
@@ -282,16 +288,31 @@ def finalize():
     check_vars(_VARS, _VARS_FILE)
     modified = []
     for f in _FILES:
+        uid = -1
+        gid = -1
         if type(f) == STRING_TYPE:
             mode = 0644
         else:
             mode = f[1]
+            if len(f) >= 3 and f[2] != None:
+                try:
+                    uid = pwd.getpwnam(f[2]).pw_uid
+                except KeyError:
+                    print f
+                    pass
+            if len(f) >= 4 and f[3] != None:
+                try:
+                    gid = grp.getgrnam(f[3]).gr_gid
+                except KeyError:
+                    print f
+                    pass
             f = f[0]
+                
         l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), strings + _ROLES)
         t = os.path.join(_DEST, f[1:])
         if l:
             if is_newer(l, t) or is_newer(_VARS_FILE, t):
-                if copyfile(l, t, _VARS, mode):
+                if copyfile(l, t, _VARS, mode, uid, gid):
                     modified.append(f)
                     print 'copied', l, 'to', t
                 else:

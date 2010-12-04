@@ -15,7 +15,7 @@ Philosophy
 ==========
 
 AdminKit is a tool to manage systems' configuration. It automates
-system administration tasks. All the configuration descriptions is
+system administration tasks. All the configuration descriptions are
 stored in a central directory tree. This tree is copied on all the
 systems by a mean that is outside AdminKit. You can use a network file
 system or a distributed revision control for this purpose. For
@@ -37,7 +37,7 @@ The roles are described in the ``roles`` sub-directory. The roles
 describe the needed config files and services.
 
 The config files are under the ``files`` sub-directory. You can
-specialized the config file by adding the name of the system or any
+specialize the config files by adding the name of the system or any
 roles or domain.
 
 adminkit.conf
@@ -75,7 +75,7 @@ directory. Role files can use the following directives:
 ``add_files(<file desc>, <file desc> ...)``
   add files from the repository to be copied in the system for this
   role. A ``file desc`` can be a path, a list with a path and a
-  permission.
+  permission or a path, a permission, a user and a group.
 
 ``files_for_service(<service>, <file1>, <file2>...)`` 
   defines files that are added like the ``add_files directive`` but in
@@ -136,8 +136,8 @@ variables are automatically defined:
 You can also define variables in the main config file or in the role
 files using the ``add_var`` definitions.
 
-Variables are used in the config files using the jinja2 conventions (for example
- ``{{ hostname }}``).
+Variables are used in the config files using the jinja2 conventions
+ (for example ``{{ hostname }}``).
 
 Example
 -------
@@ -162,7 +162,7 @@ of host1 is host1.domain.com: ::
 
 Then the ``base`` role defines what files are defined for the role: ::
 
-  add_files(('/etc/cron.hourly/base', 0755),
+  add_files(('/etc/cron.hourly/base', 0755, 'root', 'root'),
              '/etc/mailname')
 
 The file ``/var/lib/adminkit/files/etc/mailname`` will be copied to

@@ -9,12 +9,13 @@
 #---------------------------------------------------------------
 
 TOP=`dirname $0`
+ORG=`pwd`
 
 run_adminkit()
 {
     [ -d dest ] || cd $TOP/$1
     mkdir -p once
-    ../../adminkit -R $PWD/ -D $PWD/dest/ adminkit.conf
+    fakeroot ../../adminkit -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }
 
@@ -22,6 +23,7 @@ clean_result()
 {
     rm -rf $PWD/dest/*
     rm -rf $PWD/vars $PWD/once
+    cd $ORG
 }
 
 testCopy()
@@ -31,6 +33,18 @@ testCopy()
     assertEquals 'copy is different' $? 0
     touch -r $PWD/dest/etc/test $PWD/dest/ref
     run_adminkit test1
+    [ $PWD/dest/etc/test -nt $PWD/dest/ref ]
+    assertNotEquals 'second run modified file' $? 0
+    clean_result
+}
+
+testCopyWithSpecs()
+{
+    run_adminkit test2
+    [ -x $PWD/dest/etc/test ]
+    assertEquals 'file is not executable' $? 0
+    touch -r $PWD/dest/etc/test $PWD/dest/ref
+    run_adminkit test2
     [ $PWD/dest/etc/test -nt $PWD/dest/ref ]
     assertNotEquals 'second run modified file' $? 0
     clean_result

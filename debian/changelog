@@ -1,3 +1,17 @@
+adminkit (0.9) unstable; urgency=low
+
+  * add tests
+  * add support for uid and gid on files
+
+ -- Frederic Lepied <fred@lepied.com>  Sat, 04 Dec 2010 23:40:02 +0100
+
+adminkit (0.8) unstable; urgency=low
+
+  * if a pid file doesn't exist, don't restart the service as it means the
+    service has been stopped manually.
+
+ -- Frederic Lepied <fred@lepied.com>  Sat, 13 Nov 2010 21:25:23 +0100
+
 adminkit (0.7) unstable; urgency=low
 
   * copyfile: write a new file only if the content has changed

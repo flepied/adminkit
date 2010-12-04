@@ -1,3 +1,3 @@
-- add support for uid and gid on files
 - control the order in which the directives are executed
 - keep the time of the copied files in a sub-dir
+- implement package management

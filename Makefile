@@ -3,6 +3,9 @@ CFGDIR=/var/lib/adminkit
 all:
 	cd docs; make html
 
+test:
+	./tests/tests.sh
+
 install:
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/share/adminkit \
 	$(DESTDIR)$(CFGDIR)/roles $(DESTDIR)$(CFGDIR)/files \

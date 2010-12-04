@@ -238,8 +238,10 @@ def finalize():
             print c, '->', _VARS[c]
         print 'ROLES ->', _ROLES
         print 'ROOT ->', _ROOT
-        print 'DEST ->', _DEST
-        
+        print 'DEST ->', _DEST 
+        print 'VARS_FILE ->', _VARS_FILE
+        print 'ONCE_DIR ->', _ONCE_DIR
+       
     # exported functions to be used in role files
     globals = {'add_files': add_files,
                'files_for_service': files_for_service,
@@ -336,7 +338,7 @@ def finalize():
     for p in _PIDFILE.keys():
         restart = False
         if not os.path.exists(_PIDFILE[p]):
-            restart = True
+            restart = False
         else:
             file = open(_PIDFILE[p])
             content = file.read(-1)
@@ -365,8 +367,12 @@ def finalize():
                     
 def set_root(root):
     global _ROOT
-
+    global _ONCE_DIR
+    global _VARS_FILE
+    
     _ROOT = root
+    _ONCE_DIR = os.path.join(_ROOT, 'once')
+    _VARS_FILE = os.path.join(_ROOT, 'vars')
 
 def set_dest(dest):
     global _DEST

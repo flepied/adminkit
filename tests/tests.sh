@@ -12,21 +12,27 @@ TOP=`dirname $0`
 
 run_adminkit()
 {
-    cd $TOP/$1
+    [ -d dest ] || cd $TOP/$1
+    mkdir -p once
     ../../adminkit -R $PWD/ -D $PWD/dest/ adminkit.conf
-    assertEquals $? 0
+    assertEquals "error running adminkit for $1" $? 0
 }
 
 clean_result()
 {
     rm -rf $PWD/dest/*
+    rm -rf $PWD/vars $PWD/once
 }
 
 testCopy()
 {
     run_adminkit test1
     cmp $PWD/files/etc/test $PWD/dest/etc/test
-    assertEquals $? 0
+    assertEquals 'copy is different' $? 0
+    touch -r $PWD/dest/etc/test $PWD/dest/ref
+    run_adminkit test1
+    [ $PWD/dest/etc/test -nt $PWD/dest/ref ]
+    assertNotEquals 'second run modified file' $? 0
     clean_result
 }
 

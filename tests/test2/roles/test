@@ -1,0 +1,1 @@
+add_files(('/etc/test', 0755, 'root', 'root'))

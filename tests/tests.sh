@@ -13,8 +13,8 @@ ORG=`pwd`
 
 run_adminkit()
 {
-    [ -d dest ] || cd $TOP/$1
-    mkdir -p once
+    [ -d roles ] || cd $TOP/$1
+    mkdir -p once dest
     fakeroot ../../adminkit -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }

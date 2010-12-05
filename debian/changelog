@@ -1,3 +1,9 @@
+adminkit (0.10) unstable; urgency=low
+
+  * added install_pkg function for roles
+
+ -- Frederic Lepied <fred@lepied.com>  Sun, 05 Dec 2010 22:12:52 +0100
+
 adminkit (0.9) unstable; urgency=low
 
   * add tests

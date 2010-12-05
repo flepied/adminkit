@@ -105,6 +105,10 @@ directory. Role files can use the following directives:
 
 ``files_to_command(<command>, <regexp>, ...)``
   when a file matching ``<regexp>`` is modified, run the ``<command>``.
+
+``install_pkg(<pkg1>, <pkg2>...)``
+  install packages using the system packaging tool. Only apt-get is
+  supported so far.
   
 In fact role files are python files so you can use any python
 construct you want.

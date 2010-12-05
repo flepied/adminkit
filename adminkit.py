@@ -64,6 +64,7 @@ _ONCE = []
 _COMMANDS = {}
 _ONCE_DIR = os.path.join(_ROOT, 'once')
 _VARS_FILE = os.path.join(_ROOT, 'vars')
+_PKGS = []
 
 def detect_os():
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
@@ -241,6 +242,13 @@ def import_module(c, path):
 def check_service_by_pidfile(service, pidfile):
     _PIDFILE[service] = pidfile
 
+def install_pkg(*pkgs):
+    global _PKGS
+
+    for p in pkgs:
+        if not p in _PKGS:
+            _PKGS.append(p)
+            
 def finalize():
     # Loading roles
     path = []    
@@ -274,6 +282,7 @@ def finalize():
                'get_var': get_var,
                'run_once': run_once,
                'files_for_service': files_for_service,
+               'install_pkg': install_pkg,
                }
     
     for c in _ROLES:
@@ -288,6 +297,23 @@ def finalize():
         print 'SERVICES', _SERVICES
         print 'VARIABLES', _VARS
         print 'ONCE', _ONCE
+        print 'PKGS', _PKGS
+
+    # manage pkgs
+    if len(_PKGS) > 0:
+        status, output = commands.getstatusoutput("dpkg -l|grep ^ii|awk '{print $2;}'")
+        installed_pkgs = output.split('\n')
+        for p in _PKGS:
+            if p in installed_pkgs:
+                if _DEBUG:
+                    print p, 'already installed'
+            else:
+                status, output = commands.getstatusoutput('apt-get install %s' % p)
+                if status == 0:
+                    print 'installed package', p
+                else:
+                    print 'problems installing package', p, ':'
+                    print output
 
     # Managing directories
     for d in _DIRS:

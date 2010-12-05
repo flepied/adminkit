@@ -50,6 +50,12 @@ testCopyWithSpecs()
     clean_result
 }
 
+testPkg()
+{
+    run_adminkit test3
+    clean_result
+}
+
 . /usr/share/shunit2/shunit2
 
 # tests.sh ends here

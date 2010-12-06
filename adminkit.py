@@ -250,6 +250,13 @@ def install_pkg(*pkgs):
             _PKGS.append(p)
             
 def finalize():
+    for s in (_CODE, _OS):
+        try:
+            mod = __import__(s)
+            break
+        except ImportError:
+            continue
+    system = mod.System()
     # Loading roles
     path = []    
     strings = []
@@ -301,14 +308,13 @@ def finalize():
 
     # manage pkgs
     if len(_PKGS) > 0:
-        status, output = commands.getstatusoutput("dpkg -l|grep ^ii|awk '{print $2;}'")
-        installed_pkgs = output.split('\n')
+        installed_pkgs = system.get_packages()
         for p in _PKGS:
             if p in installed_pkgs:
                 if _DEBUG:
                     print p, 'already installed'
             else:
-                status, output = commands.getstatusoutput('apt-get install %s' % p)
+                status, output = system.install_pkg(p)
                 if status == 0:
                     print 'installed package', p
                 else:

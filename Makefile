@@ -12,7 +12,7 @@ install:
 	$(DESTDIR)$(CFGDIR)/once \
 	$(DESTDIR)$(CFGDIR)/adminkit.conf.d
 	install adminkit $(DESTDIR)/usr/bin/
-	install -m 644 adminkit.py $(DESTDIR)/usr/share/adminkit/
+	install -m 644 debian.py mandriva.py ubuntu.py adminkit.py $(DESTDIR)/usr/share/adminkit/
 	install -m 755 update-adminkit.conf $(DESTDIR)/usr/share/adminkit/
 
 clean:

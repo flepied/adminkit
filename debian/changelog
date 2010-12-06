@@ -1,3 +1,10 @@
+adminkit (0.11) unstable; urgency=low
+
+  * first try to implement system specifics calls. Only packaging install
+  for Debian, Ubuntu and Mandriva.
+
+ -- Frederic Lepied <fred@lepied.com>  Mon, 06 Dec 2010 22:19:03 +0100
+
 adminkit (0.10) unstable; urgency=low
 
   * added install_pkg function for roles

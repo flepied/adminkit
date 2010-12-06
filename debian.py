@@ -11,11 +11,12 @@ import commands
 
 class System:
     def get_packages(self):
+        commands.getstatusoutput('apt-get update -q')
         status, output = commands.getstatusoutput("dpkg -l|grep ^ii|awk '{print $2;}'")
         return output.split('\n')
 
-    def install_pkg(self, pkg):
-        status, output = commands.getstatusoutput('apt-get install %s' % pkg)
+    def install_package(self, pkg):
+        status, output = commands.getstatusoutput('apt-get install -q -y %s' % pkg)
         return (status, output)
     
 # debian.py ends here

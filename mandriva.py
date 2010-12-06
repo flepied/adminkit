@@ -11,11 +11,12 @@ import commands
 
 class System:
     def get_packages(self):
+        commands.getstatusoutput('urpmi.update -a')
         status, output = commands.getstatusoutput("rpm -qa --qf '%{NAME}\n'")
         return output.split('\n')
 
-    def install_pkg(self, pkg):
-        status, output = commands.getstatusoutput('urpmi %s' % pkg)
+    def install_package(self, pkg):
+        status, output = commands.getstatusoutput('urpmi --auto %s' % pkg)
         return (status, output)
 
 # mandriva.py ends here

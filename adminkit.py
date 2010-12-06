@@ -314,7 +314,7 @@ def finalize():
                 if _DEBUG:
                     print p, 'already installed'
             else:
-                status, output = system.install_pkg(p)
+                status, output = system.install_package(p)
                 if status == 0:
                     print 'installed package', p
                 else:

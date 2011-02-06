@@ -6,6 +6,9 @@ all:
 test:
 	./tests/tests.sh
 
+check:
+	pylint --disable-msg=C0103,C0301,W0603 -f parseable adminkit
+
 install:
 	mkdir -p $(DESTDIR)/usr/bin $(DESTDIR)/usr/share/adminkit \
 	$(DESTDIR)$(CFGDIR)/roles $(DESTDIR)$(CFGDIR)/files \

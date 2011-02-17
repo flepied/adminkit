@@ -2,7 +2,7 @@
 #---------------------------------------------------------------
 # Project         : tests
 # File            : tests.sh
-# Copyright       : (C) 2010 by Frederic Lepied
+# Copyright       : (C) 2010,2011 by Frederic Lepied
 # Author          : Frederic Lepied
 # Created On      : Sat Dec  4 23:23:23 2010
 # Purpose         : tests driver for adminkit
@@ -53,6 +53,16 @@ testCopyWithSpecs()
 testPkg()
 {
     run_adminkit test3
+    clean_result
+}
+
+testInclude()
+{
+    run_adminkit test4
+    cmp $PWD/dest/etc/p /etc/passwd
+    assertEquals 'copy is different' $? 0
+    cmp $PWD/files/etc/toto $PWD/dest/etc/test
+    assertEquals 'copy is different' $? 0
     clean_result
 }
 

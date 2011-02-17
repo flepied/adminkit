@@ -37,13 +37,13 @@ import hashlib
 import pwd
 import grp
 
-from jinja2 import Environment
-
-_ENV = Environment()
+from jinja2 import Environment, FileSystemLoader
 
 STRING_TYPE = type('e')
 
 _DEBUG = False
+
+_ENV = None
 
 _SHORT = False
 _HOST = ''
@@ -263,6 +263,9 @@ def install_pkg(*pkgs):
             
 def finalize():
     """Do the actual action that were registered for the host."""
+
+    global _ENV
+    
     for s in (_CODE, _OS):
         try:
             mod = __import__(s)
@@ -280,6 +283,8 @@ def finalize():
         d = os.path.join(_ROOT, 'roles', p)
         if os.path.exists(d) and os.path.isdir(d):
             path.append(d)
+
+    _ENV = Environment(loader = FileSystemLoader([os.path.join(_ROOT, 'files'), '/']))
     
     if _DEBUG:
         print 'PATH ->', path

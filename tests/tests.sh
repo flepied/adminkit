@@ -78,6 +78,14 @@ testGlobal()
     clean_result
 }
 
+testFilename()
+{
+    run_adminkit test6
+    assertEquals 'error processing global directive' $? 0
+    [ -f $PWD/dest/etc-`hostname -d`/test.`hostname` ]
+    assertEquals 'file not created with the right name' $? 0
+    clean_result
+}
 . /usr/share/shunit2/shunit2
 
 # tests.sh ends here

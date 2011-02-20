@@ -204,7 +204,7 @@ def copyfile(src, dst, variables, mode, uid, gid):
             os.chown(dst, uid, gid)
         fd.write(result)
         fd.close()
-        return True
+        return dst
 
 def add_files(*files):
     """Add files to the global list."""
@@ -307,7 +307,11 @@ def global_conf(conf):
         print out,
         
     return res
-    
+
+def expand_variables(str):
+    """Expand variable in the string using jinja2."""
+    return _ENV.from_string(str).render(_VARS)
+
 def finalize():
     """Do the actual action that were registered for the host."""
 
@@ -396,7 +400,7 @@ def finalize():
 
     # Managing directories
     for path in _DIRS:
-        d = os.path.join(_DEST, path[1:])
+        d = expand_variables(os.path.join(_DEST, path[1:]))
         if not os.path.isdir(d):
             print 'creating directory', d
             os.makedirs(d)
@@ -429,8 +433,8 @@ def finalize():
             f = f[0]
                 
         l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), strings + _ROLES)
-        t = os.path.join(_DEST, f[1:])
         if l:
+            t = expand_variables(os.path.join(_DEST, f[1:]))
             if is_newer(l, t) or is_newer(_VARS_FILE, t):
                 if copyfile(l, t, _VARS, mode, uid, gid):
                     modified.append(f)
@@ -441,7 +445,7 @@ def finalize():
                 if _DEBUG:
                     print l, 'not newer than', t
         else:
-            print 'ERROR', t, 'not found'
+            print 'ERROR', f, 'not found'
             _RET = 1
 
     for f in _PERMS:

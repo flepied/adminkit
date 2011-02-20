@@ -121,7 +121,7 @@ construct you want.
 Config files
 ------------
 
-The config files are in fact templates containing variables. Some
+The config files are in fact templates taht can use variables. Some
 variables are automatically defined:
 
 ``hostname``
@@ -146,7 +146,14 @@ You can also define variables in the main config file or in the role
 files using the ``add_var`` definitions.
 
 Variables are used in the config files using the jinja2 conventions
- (for example ``{{ hostname }}``).
+(for example ``{{ hostname }}``). You can also use variables in the
+name of files or directories.
+
+You can have specialized version of the same file by using extensions
+taken from variable or role names. For example, if you are using a
+file called ``/etc/config`` in your role file, adminkit will lookup
+``/etc/config.<shortname>``, ``/etc/config.<hostname>``,
+``/etc/config.<osname>``...
 
 Example
 -------

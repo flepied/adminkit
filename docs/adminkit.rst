@@ -112,7 +112,7 @@ directory. Role files can use the following directives:
 
 ``global_conf(<subdir>)``
   run adminkit using the same config file but using the roles and
-  files from ``<subdir>>`` for each host in the config file. This is
+  files from ``<subdir>`` for each host in the config file. This is
   useful to work on the whole config at once.
 
 In fact role files are python files so you can use any python

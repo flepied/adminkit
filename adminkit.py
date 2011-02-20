@@ -264,9 +264,9 @@ def install_pkg(*pkgs):
 
 def global_conf(conf):
     """Process the config file again with another driver called global."""
-    (dir, name) = os.path.split(sys.argv[0])
-    if dir != '':
-        cmd = '%s/global ' % dir
+    (path, _name) = os.path.split(sys.argv[0])
+    if path != '':
+        cmd = '%s/global ' % path
     else:
         cmd = 'global '
     

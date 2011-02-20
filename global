@@ -20,9 +20,12 @@
 #
 # Author          : Frederic Lepied
 # Created On      : Sun Feb 20 14:28:08 2011
-# Purpose         : entry point for global rules that need to
-#                 process the config as a whole.
 #---------------------------------------------------------------
+
+"""
+Entry point for global rules that need to process the config as a
+whole.
+"""
 
 import os
 import sys
@@ -30,7 +33,7 @@ import commands
 
 try:
     import adminkit
-except:
+except ImportError:
     sys.path = ['/usr/share/adminkit'] + sys.path
     import adminkit
 
@@ -52,8 +55,8 @@ define_domain = adminkit.define_domain
 
 def check_host(host):
     """Add host to the list of known hosts."""
-    if '.' not in host and adminkit._DEFAULT_DOMAIN:
-        host = host + '.' + adminkit._DEFAULT_DOMAIN
+    if '.' not in host and adminkit.default_domain():
+        host = host + '.' + adminkit.default_domain()
 
     if host not in _HOSTS:
         _HOSTS.append(host)
@@ -72,51 +75,52 @@ def add_to_list_host(host, name, val):
     
 get_var = adminkit.get_var
 
-def add_roles(h, *r):
+def add_roles(h, *rls):
+    """Add roles for the host."""
     host = check_host(h)
     try:
         roles = _ROLES[host]
     except KeyError:
         roles = _ROLES[host] = []
-    for role in r:
+    for role in rls:
         if role not in roles:
             _ROLES[host].append(role)
             
-globals = {'define_domain': define_domain,
-           'add_var': add_var_host,
-           'add_to_list': add_to_list_host,
-           'get_var': get_var,
-           'add_roles': add_roles,
-           }
+glbls = {'define_domain': define_domain,
+         'add_var': add_var_host,
+         'add_to_list': add_to_list_host,
+         'get_var': get_var,
+         'add_roles': add_roles,
+         }
 
-execfile(CFGFILE, globals)
+execfile(CFGFILE, glbls)
 
-(dir, name) = os.path.split(sys.argv[0])
-if dir != '':
-    cmd0 = '%s/adminkit ' % dir
+(path, _name) = os.path.split(sys.argv[0])
+if path != '':
+    cmd0 = '%s/adminkit ' % path
 else:
     cmd0 = 'adminkit '
 
-if adminkit._DEBUG:
+if adminkit.debug():
     cmd0 = cmd0 + ' -d '
 
 ret = 0
 
-if adminkit._DEBUG:
+if adminkit.debug():
     print 'HOSTS:', _HOSTS
     print 'ROLES:', _ROLES
     
-for h in _HOSTS:
-    cmd = [cmd0, '-H', h, '-R', os.path.join(adminkit._ROOT, SUBDIR), '-D', adminkit._DEST]
+for hst in _HOSTS:
+    cmd = [cmd0, '-H', hst, '-R', os.path.join(adminkit.root(), SUBDIR), '-D', adminkit.dest()]
     try:
-        for r in _ROLES[h]:
+        for r in _ROLES[hst]:
             cmd.append('-r')
             cmd.append(r)
     except KeyError:
         pass
     cmd.append(CFGFILE)
     cmd = ' '.join(cmd)
-    if adminkit._DEBUG:
+    if adminkit.debug():
         print 'Launching', cmd
     (res, out) = commands.getstatusoutput(cmd)
     if res != 0:

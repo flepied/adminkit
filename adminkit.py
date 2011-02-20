@@ -69,6 +69,28 @@ _ONCE_DIR = os.path.join(_ROOT, 'once')
 _VARS_FILE = os.path.join(_ROOT, 'vars')
 _PKGS = []
 
+#######################################################################################
+# Accessor needed by external modules
+#######################################################################################
+
+def debug():
+    """Accessor."""
+    return _DEBUG
+
+def root():
+    """Accessor."""
+    return _ROOT
+
+def default_domain():
+    """Accessor."""
+    return _DEFAULT_DOMAIN
+
+def dest():
+    """Accessor."""
+    return _DEST
+
+#######################################################################################
+
 def detect_os():
     """Detect the OS using lsb_release."""
     return commands.getoutput("lsb_release -a 2>/dev/null|grep Distributor|sed -n 's/Distributor ID:\s*//p'").lower()
@@ -490,21 +512,21 @@ def finalize():
                 _RET = 1
     return _RET
 
-def set_root(root):
+def set_root(rt):
     "Initialize global variables."""
     global _ROOT
     global _ONCE_DIR
     global _VARS_FILE
 
-    _ROOT = root
+    _ROOT = rt
     _ONCE_DIR = os.path.join(_ROOT, 'once')
     _VARS_FILE = os.path.join(_ROOT, 'vars')
 
-def set_dest(dest):
+def set_dest(dst):
     """Initialize destination directory."""
     global _DEST
 
-    _DEST = dest
+    _DEST = dst
 
 def usage():
     """Help message."""

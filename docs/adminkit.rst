@@ -109,7 +109,12 @@ directory. Role files can use the following directives:
 ``install_pkg(<pkg1>, <pkg2>...)``
   install packages using the system packaging tool. Only apt-get and urpmi
   are supported so far.
-  
+
+``global_conf(<subdir>)``
+  run adminkit using the same config file but using the roles and
+  files from ``<subdir>>`` for each host in the config file. This is
+  useful to work on the whole config at once.
+
 In fact role files are python files so you can use any python
 construct you want.
 

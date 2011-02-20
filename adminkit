@@ -49,6 +49,6 @@ globals = {'define_domain': define_domain,
 
 execfile(CFGFILE, globals)
 
-finalize()
+sys.exit(finalize())
 
 # adminkit ends here

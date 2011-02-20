@@ -1,0 +1,131 @@
+#!/usr/bin/python
+#---------------------------------------------------------------
+# Project         : adminkit
+# File            : global
+# Copyright       : (C) 2011 by Frederic Lepied
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Author          : Frederic Lepied
+# Created On      : Sun Feb 20 14:28:08 2011
+# Purpose         : entry point for global rules that need to
+#                 process the config as a whole.
+#---------------------------------------------------------------
+
+import os
+import sys
+import commands
+
+try:
+    import adminkit
+except:
+    sys.path = ['/usr/share/adminkit'] + sys.path
+    import adminkit
+
+SUBDIR = sys.argv[1]
+del sys.argv[1]
+
+CFGFILE = adminkit.init()
+
+# safety check
+if not os.path.isfile(CFGFILE):
+    sys.exit(0)
+
+# Implement the same functions as if it was adminkit itself
+
+_HOSTS = []
+_ROLES = {}
+
+define_domain = adminkit.define_domain
+
+def check_host(host):
+    """Add host to the list of known hosts."""
+    if '.' not in host and adminkit._DEFAULT_DOMAIN:
+        host = host + '.' + adminkit._DEFAULT_DOMAIN
+
+    if host not in _HOSTS:
+        _HOSTS.append(host)
+
+    return host
+
+def add_var_host(host, name, val):
+    """Define a variable named name to the value val if host is the current host."""
+    check_host(host)
+    adminkit.add_var_host(host, name, val)
+    
+def add_to_list_host(host, name, val):
+    """Add val to the list named name if host if the current host."""
+    check_host(host)
+    adminkit.add_to_list_host(host, name, val)
+    
+get_var = adminkit.get_var
+
+def add_roles(h, *r):
+    host = check_host(h)
+    try:
+        roles = _ROLES[host]
+    except KeyError:
+        roles = _ROLES[host] = []
+    for role in r:
+        if role not in roles:
+            _ROLES[host].append(role)
+            
+globals = {'define_domain': define_domain,
+           'add_var': add_var_host,
+           'add_to_list': add_to_list_host,
+           'get_var': get_var,
+           'add_roles': add_roles,
+           }
+
+execfile(CFGFILE, globals)
+
+(dir, name) = os.path.split(sys.argv[0])
+if dir != '':
+    cmd0 = '%s/adminkit ' % dir
+else:
+    cmd0 = 'adminkit '
+
+if adminkit._DEBUG:
+    cmd0 = cmd0 + ' -d '
+
+ret = 0
+
+if adminkit._DEBUG:
+    print 'HOSTS:', _HOSTS
+    print 'ROLES:', _ROLES
+    
+for h in _HOSTS:
+    cmd = [cmd0, '-H', h, '-R', os.path.join(adminkit._ROOT, SUBDIR), '-D', adminkit._DEST]
+    try:
+        for r in _ROLES[h]:
+            cmd.append('-r')
+            cmd.append(r)
+    except KeyError:
+        pass
+    cmd.append(CFGFILE)
+    cmd = ' '.join(cmd)
+    if adminkit._DEBUG:
+        print 'Launching', cmd
+    (res, out) = commands.getstatusoutput(cmd)
+    if res != 0:
+        print 'Error running "%s":' % cmd
+        print out
+        ret = 1
+    else:
+        print out,
+        
+sys.exit(ret)
+
+# global ends here

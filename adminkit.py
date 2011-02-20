@@ -42,6 +42,7 @@ from jinja2 import Environment, FileSystemLoader
 STRING_TYPE = type('e')
 
 _DEBUG = False
+_RET = 0
 
 _ENV = None
 
@@ -260,11 +261,38 @@ def install_pkg(*pkgs):
     for p in pkgs:
         if not p in _PKGS:
             _PKGS.append(p)
-            
+
+def global_conf(conf):
+    """Process the config file again with another driver called global."""
+    (dir, name) = os.path.split(sys.argv[0])
+    if dir != '':
+        cmd = '%s/global ' % dir
+    else:
+        cmd = 'global '
+    
+    cmd = cmd + conf + ' ' + ' '.join(sys.argv[1:])
+    
+    if _DEBUG:
+        print 'Global config through', cmd
+        
+    (res, out) = commands.getstatusoutput(cmd)
+    if res != 0:
+        global _RET
+        print 'Error running "%s":' % cmd
+        print out
+        _RET = 1
+    else:
+        print out,
+        
+    return res
+    
 def finalize():
     """Do the actual action that were registered for the host."""
 
     global _ENV
+    global _RET
+    
+    _RET = 0                             # return value
     
     for s in (_CODE, _OS):
         try:
@@ -307,13 +335,18 @@ def finalize():
                  'get_var': get_var,
                  'run_once': run_once,
                  'install_pkg': install_pkg,
+                 'global_conf': global_conf,
                  }
     
     for c in _ROLES:
         if _DEBUG:
             print 'Loading role', c
         f = find_file(c, path)
-        execfile(f, functions)
+        if f:
+            execfile(f, functions)
+        else:
+            print 'No such role', c, 'in', ':'.join(path)
+            _RET = 1
     
     if _DEBUG:
         print _ENV.from_string('hostname is {{ hostname }}').render(_VARS)
@@ -337,6 +370,7 @@ def finalize():
                 else:
                     print 'problems installing package', p, ':'
                     print output
+                    _RET = 1
 
     # Managing directories
     for path in _DIRS:
@@ -363,11 +397,13 @@ def finalize():
                     uid = pwd.getpwnam(f[2]).pw_uid
                 except KeyError:
                     print 'Unable to find uid for', f[2]
+                    _RET = 1
             if len(f) >= 4 and f[3] != None:
                 try:
                     gid = grp.getgrnam(f[3]).gr_gid
                 except KeyError:
                     print 'Unable to find gid for', f[3]
+                    _RET = 1
             f = f[0]
                 
         l = find_file_with_vars(f, os.path.join(_ROOT, 'files'), strings + _ROLES)
@@ -384,6 +420,7 @@ def finalize():
                     print l, 'not newer than', t
         else:
             print 'ERROR', t, 'not found'
+            _RET = 1
 
     for f in _PERMS:
         try:
@@ -394,7 +431,7 @@ def finalize():
         except:
             print 'ERROR changing perms of', f[0], ':'
             print sys.exc_info()[1]
-    
+            _RET = 1
     # Managing services
     reloaded = []
     for f in modified:
@@ -407,6 +444,7 @@ def finalize():
                     if status != 0:
                         print 'Error reloading %s:' % s
                         print output
+                        _RET = 1
             for r in _COMMANDS.keys():
                 if r.search(f):
                     cmd = _COMMANDS[r]
@@ -415,6 +453,7 @@ def finalize():
                     if status != 0:
                         print 'Error reloading %s:' % cmd
                         print output
+                        _RET = 1
         except KeyError:
             pass
 
@@ -436,6 +475,7 @@ def finalize():
             if status != 0:
                 print 'Error restarting %s:' % p
                 print output
+                _RET = 1
     for cmd in _ONCE:
         hsh = hashlib.sha1(cmd).hexdigest()
         path = os.path.join(_ONCE_DIR, hsh)
@@ -447,13 +487,15 @@ def finalize():
             else:
                 print 'Error running once %s:' % cmd
                 print output
-                    
+                _RET = 1
+    return _RET
+
 def set_root(root):
     "Initialize global variables."""
     global _ROOT
     global _ONCE_DIR
     global _VARS_FILE
-    
+
     _ROOT = root
     _ONCE_DIR = os.path.join(_ROOT, 'once')
     _VARS_FILE = os.path.join(_ROOT, 'vars')
@@ -491,21 +533,8 @@ def init():
     
     _OS = detect_os()
     _HOST = socket.gethostname()
-    h = _HOST.split('.', 1)
-    _SHORT = h[0]
-    if len(h) > 1:
-        _DOMAIN = h[1]
-    else:
-        _DOMAIN = ''
     _SYSTEM = os.uname()[0].lower()
     _CODE = detect_os_code()
-    
-    add_var('shortname', _SHORT)
-    add_var('hostname', _HOST)
-    add_var('domainname', _DOMAIN)
-    add_var('osname', _OS)
-    add_var('sysname', _SYSTEM)
-    add_var('oscode', _CODE)
     
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -527,9 +556,22 @@ def init():
         else:
             assert False, "unhandled option"
 
+    h = _HOST.split('.', 1)
+    _SHORT = h[0]
+    if len(h) > 1:
+        _DOMAIN = h[1]
+    else:
+        _DOMAIN = ''
+
+    add_var('shortname', _SHORT)
+    add_var('hostname', _HOST)
+    add_var('domainname', _DOMAIN)
+    add_var('osname', _OS)
+    add_var('sysname', _SYSTEM)
+    add_var('oscode', _CODE)
+    
     if len(args) == 1:
         path = os.path.abspath(args[0])
-        set_root(os.path.dirname(path))
         return path
     else:
         return os.path.join(_ROOT, 'adminkit.conf')

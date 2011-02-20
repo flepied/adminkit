@@ -15,14 +15,19 @@ run_adminkit()
 {
     [ -d roles ] || cd $TOP/$1
     mkdir -p once dest
-    fakeroot ../../adminkit -R $PWD/ -D $PWD/dest/ adminkit.conf
+    if [ -n "$2" ]; then
+	DRIVER="$2"
+    else
+	DRIVER=adminkit
+    fi
+    fakeroot ../../$DRIVER -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }
 
 clean_result()
 {
     rm -rf $PWD/dest/*
-    rm -rf $PWD/vars $PWD/once
+    rm -rf $PWD/vars $PWD/top/vars $PWD/once
     cd $ORG
 }
 
@@ -63,6 +68,13 @@ testInclude()
     assertEquals 'copy is different' $? 0
     cmp $PWD/files/etc/toto $PWD/dest/etc/test
     assertEquals 'copy is different' $? 0
+    clean_result
+}
+
+testGlobal()
+{
+    run_adminkit test5
+    assertEquals 'error processing global directive' $? 0
     clean_result
 }
 

@@ -86,6 +86,14 @@ testFilename()
     assertEquals 'file not created with the right name' $? 0
     clean_result
 }
+
+testList()
+{
+    run_adminkit test7
+    assertEquals 'error processing add_to_list directive' $? 0
+    clean_result
+}
+
 . /usr/share/shunit2/shunit2
 
 # tests.sh ends here

@@ -1,0 +1,6 @@
+
+{% for host in hosts %}{{ host.0 }}	{{ host.1 }}
+{% endfor %}
+
+# end of file
+

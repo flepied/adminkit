@@ -114,14 +114,27 @@ def check_host(host):
     
     return (host == _HOST)
     
-def add_var_host(host, name, val):
+def add_var_host(host, name, *val):
     """Define a variable named name to the value val if host is the current host."""
     if check_host(host):
-        add_var(name, val)
+        add_var(name, *val)
 
-def add_var(name, val):
+ARRAY_TYPE = type({})
+
+def add_to(tab, *val):
+    """Helper function for add_var."""
+    if len(val) == 1:
+        return val[0]
+    else:
+        try:
+            tab[val[0]] = add_to(tab[val[0]], *val[1:])
+        except:
+            tab[val[0]] = add_to({}, *val[1:])
+        return tab
+
+def add_var(*val):
     """Define a variable named name to the value val."""
-    _VARS[name] = val
+    add_to(_VARS, *val)
     
 def add_to_list_host(host, name, val):
     """Add val to the list named name if host if the current host."""
@@ -308,9 +321,9 @@ def global_conf(conf):
         
     return res
 
-def expand_variables(str):
+def expand_variables(s):
     """Expand variable in the string using jinja2."""
-    return _ENV.from_string(str).render(_VARS)
+    return _ENV.from_string(s).render(_VARS)
 
 def finalize():
     """Do the actual action that were registered for the host."""

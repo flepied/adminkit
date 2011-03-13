@@ -91,7 +91,7 @@ directory. Role files can use the following directives:
 ``check_perms((<file>, <perm>), ...)``
   enforces permissions of files for this role.
 
-``add_var(<name>, <value>)``
+``add_var(<name>[, <name2>...],<value>)``
   define a variable.
 
 ``add_to_list(<name>, <value>)``

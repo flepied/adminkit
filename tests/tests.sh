@@ -94,6 +94,13 @@ testList()
     clean_result
 }
 
+testVars()
+{
+    run_adminkit test8
+    assertEquals 'error processing add_to_list directive' $? 0
+    clean_result
+}
+
 . /usr/share/shunit2/shunit2
 
 # tests.sh ends here

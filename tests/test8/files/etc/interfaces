@@ -1,0 +1,12 @@
+auto lo
+iface lo inet loopback
+
+{% for card in networkcards %}
+auto {{ card }}
+iface {{ card }} inet static
+     address {{ network[card]['address'] }}
+     gateway {{ network[card].gateway }}
+     netmask {{ network[card].netmask }}
+{% endfor %}
+
+# end of file

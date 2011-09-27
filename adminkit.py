@@ -366,6 +366,7 @@ def finalize():
     # exported functions to be used in role files
     functions = {'add_files': add_files,
                  'files_for_service': files_for_service,
+                 'files_to_command': files_to_command,
                  'check_service_by_pidfile': check_service_by_pidfile,
                  'check_perms': check_perms,
                  'add_dirs': add_dirs,
@@ -484,18 +485,18 @@ def finalize():
                         print 'Error reloading %s:' % s
                         print output
                         _RET = 1
-            for r in _COMMANDS.keys():
-                if r.search(f):
-                    cmd = _COMMANDS[r]
-                    print 'launching command', s, 'for', f
-                    status, output = commands.getstatusoutput(cmd)
-                    if status != 0:
-                        print 'Error reloading %s:' % cmd
-                        print output
-                        _RET = 1
         except KeyError:
             pass
-
+        for r in _COMMANDS.keys():
+            if r.search(f):
+                cmd = _COMMANDS[r]
+                print 'launching command', s, 'for', f
+                status, output = commands.getstatusoutput(cmd)
+                if status != 0:
+                    print 'Error reloading %s:' % cmd
+                    print output
+                    _RET = 1
+                    
     for p in _PIDFILE.keys():
         restart = False
         if not os.path.exists(_PIDFILE[p]):

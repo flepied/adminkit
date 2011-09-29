@@ -42,6 +42,7 @@ from jinja2 import Environment, FileSystemLoader
 STRING_TYPE = type('e')
 
 _DEBUG = False
+_DRY_RUN = False
 _RET = 0
 
 _ENV = None
@@ -56,7 +57,8 @@ _DEST = '/'
 _OS = False
 _FILES = []
 _DIRS = []
-_SERVICES = {}
+_FILES_FOR_SERVICES = {}
+_SERVICES = []
 _SYSTEM = ''
 _CODE = ''
 _DEFAULT_DOMAIN = False
@@ -230,9 +232,9 @@ the service."""
     add_files(*files)
     for path in files:
         try:
-            _SERVICES[path] = _SERVICES[path] + [service]
+            _FILES_FOR_SERVICES[path] = _FILES_FOR_SERVICES[path] + [service]
         except KeyError:
-            _SERVICES[path] = [service]
+            _FILES_FOR_SERVICES[path] = [service]
 
 def add_dirs(*dirs):
     """Add directories to the global list."""
@@ -325,6 +327,18 @@ def expand_variables(s):
     """Expand variable in the string using jinja2."""
     return _ENV.from_string(s).render(_VARS)
 
+def activate_service(name):
+    """Add the service to the list of services to be activated."""
+    global _SERVICES
+
+    _SERVICES.append((name, True))
+    
+def deactivate_service(name):
+    """Add the service to the list of services to be deactivated."""
+    global _SERVICES
+
+    _SERVICES.append((name, False))
+    
 def finalize():
     """Do the actual action that were registered for the host."""
 
@@ -376,6 +390,8 @@ def finalize():
                  'run_once': run_once,
                  'install_pkg': install_pkg,
                  'global_conf': global_conf,
+                 'activate_service': activate_service,
+                 'deactivate_service': deactivate_service,
                  }
     
     for c in _ROLES:
@@ -392,6 +408,7 @@ def finalize():
         print _ENV.from_string('hostname is {{ hostname }}').render(_VARS)
         print 'FILES', _FILES
         print 'SERVICES', _SERVICES
+        print 'FILES_FOR_SERVICES', _FILES_FOR_SERVICES
         print 'VARIABLES', _VARS
         print 'ONCE', _ONCE
         print 'PKGS', _PKGS
@@ -472,30 +489,40 @@ def finalize():
             print 'ERROR changing perms of', f[0], ':'
             print sys.exc_info()[1]
             _RET = 1
+    
     # Managing services
+
+    for s in _SERVICES:
+        if s[1]:
+            system.activate_service(s[0], _DEBUG, _DRY_RUN)
+        else:
+            system.deactivate_service(s[0], _DEBUG, _DRY_RUN)
+            
     reloaded = []
     for f in modified:
         try:
-            for s in _SERVICES[f]:
+            for s in _FILES_FOR_SERVICES[f]:
                 if s not in reloaded:
                     reloaded.append(s)
                     print 'reloading service', s
-                    status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
-                    if status != 0:
-                        print 'Error reloading %s:' % s
-                        print output
-                        _RET = 1
+                    if not _DRY_RUN:
+                        status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
+                        if status != 0:
+                            print 'Error reloading %s:' % s
+                            print output
+                            _RET = 1
         except KeyError:
             pass
         for r in _COMMANDS.keys():
             if r.search(f):
                 cmd = _COMMANDS[r]
-                print 'launching command', s, 'for', f
-                status, output = commands.getstatusoutput(cmd)
-                if status != 0:
-                    print 'Error reloading %s:' % cmd
-                    print output
-                    _RET = 1
+                print 'launching command', cmd, 'for', f
+                if not _DRY_RUN:
+                    status, output = commands.getstatusoutput(cmd)
+                    if status != 0:
+                        print 'Error reloading %s:' % cmd
+                        print output
+                        _RET = 1
                     
     for p in _PIDFILE.keys():
         restart = False
@@ -511,23 +538,25 @@ def finalize():
                 restart = True
         if restart:
             print 'Restarting service', p
-            status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
-            if status != 0:
-                print 'Error restarting %s:' % p
-                print output
-                _RET = 1
+            if not _DRY_RUN:
+                status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
+                if status != 0:
+                    print 'Error restarting %s:' % p
+                    print output
+                    _RET = 1
     for cmd in _ONCE:
         hsh = hashlib.sha1(cmd).hexdigest()
         path = os.path.join(_ONCE_DIR, hsh)
         if not os.path.exists(path):
             print 'Running once', cmd
-            status, output = commands.getstatusoutput(cmd)
-            if status == 0:
-                open(path, 'w').close()
-            else:
-                print 'Error running once %s:' % cmd
-                print output
-                _RET = 1
+            if not _DRY_RUN:
+                status, output = commands.getstatusoutput(cmd)
+                if status == 0:
+                    open(path, 'w').close()
+                else:
+                    print 'Error running once %s:' % cmd
+                    print output
+                    _RET = 1
     return _RET
 
 def set_root(rt):
@@ -554,7 +583,7 @@ def usage():
 
 def init():
     """Initialize variables."""
-    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE
+    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE, _DRY_RUN
 
     # hack to allow arguments to be passed after the magic #! (they are passed as a single arg)
     if len(sys.argv) > 1:
@@ -563,8 +592,8 @@ def init():
         argv = sys.argv[1:]
         
     try:
-        opts, args = getopt.getopt(argv, "dhH:r:R:D:V:",
-                                   ["debug", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
+        opts, args = getopt.getopt(argv, "dnhH:r:R:D:V:",
+                                   ["debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -582,6 +611,8 @@ def init():
             sys.exit()
         elif o in ("-d", "--debug"):
             _DEBUG = True
+        elif o in ("-n", "--dry-run"):
+            _DRY_RUN = True
         elif o in ("-H", "--hostname"):
             _HOST = a
         elif o in ("-V", "--var"):

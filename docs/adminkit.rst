@@ -88,6 +88,14 @@ directory. Role files can use the following directives:
   checks if the service is still running else restart it for this
   role.
 
+``activate_service(<name>)``
+  activates the service ``<name>`` by registering it in the init scripts
+  and starting the service.
+  
+``deactivate_service(<name>)``
+  deactivates the service ``<name>`` by stopping the service and removing
+  it from the init scripts.
+  
 ``check_perms((<file>, <perm>), ...)``
   enforces permissions of files for this role.
 

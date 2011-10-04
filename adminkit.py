@@ -37,7 +37,7 @@ import hashlib
 import pwd
 import grp
 import logging
-import logging.config
+import logging.handlers
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -77,43 +77,6 @@ _PKGS = []
 # Logging config
 ##################################################
 logger = None
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'formatters': {
-        'normal': {
-            'format': '%(message)s',
-        },
-        'syslogfmt': {
-            'format': 'adminkit[%(process)d]: %(message)s',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'normal',
-        },
-        'syslog': {
-            'class': 'logging.handlers.SysLogHandler',
-            'formatter': 'syslogfmt',
-            'facility': 'syslog',
-            'address': '/dev/log',
-        },
-    },
-    'loggers': {
-        'syslog': {
-            'handlers':['syslog'],
-            'propagate': True,
-            'level':'INFO',
-        },
-        'console': {
-            'handlers':['console'],
-            'propagate': True,
-            'level':'INFO',
-        },
-    }
-}
 
 #######################################################################################
 # Accessor needed by external modules
@@ -662,12 +625,16 @@ def init():
         else:
             assert False, "unhandled option"
 
-    logging.config.dictConfig(LOGGING)
+    logger = logging.getLogger("adminkit")
+    
     if syslog:
-        logger = logging.getLogger('syslog')
+        h = logging.handlers.SysLogHandler('/dev/log', 'syslog')
+        f = logging.Formatter('adminkit[%(process)d]: %(message)s')
+        h.setFormatter(f)
     else:
-        logger = logging.getLogger('console')
-
+        h = logging.StreamHandler()
+    logger.addHandler(h)
+    
     if _DEBUG:
         logger.setLevel(logging.DEBUG)
         

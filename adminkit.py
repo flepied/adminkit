@@ -267,7 +267,7 @@ def is_newer(f1, f2):
     if not os.path.exists(f2):
         return True
     else:
-        return (os.path.getmtime(f1) > os.path.getmtime(f2))
+        return (os.path.getmtime(f1) >= os.path.getmtime(f2))
 
 def check_vars(variables, path):
     '''checks that vars has not changed. A checksum is compared to the content

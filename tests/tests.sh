@@ -20,7 +20,7 @@ run_adminkit()
     else
 	DRIVER=adminkit
     fi
-    fakeroot ../../$DRIVER -R $PWD/ -D $PWD/dest/ adminkit.conf
+    fakeroot ../../$DRIVER -d -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }
 

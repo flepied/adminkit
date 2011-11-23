@@ -1,5 +1,6 @@
 adminkit (0.13) unstable; urgency=low
 
+  * added -f option to force the copy of files.
   * added -s option to output messages to syslog.
   * added -n option to not launch commands during run.
   * added the activate_service and deactivate_service role commands.

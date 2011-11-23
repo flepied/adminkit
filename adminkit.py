@@ -45,6 +45,7 @@ STRING_TYPE = type('e')
 
 _DEBUG = False
 _DRY_RUN = False
+_FORCE = False
 _RET = 0
 
 _ENV = None
@@ -264,7 +265,7 @@ def files_to_command(command, *li):
 
 def is_newer(f1, f2):
     """Check if a f1 is newer than f2."""
-    if not os.path.exists(f2):
+    if _FORCE or not os.path.exists(f2):
         return True
     else:
         return (os.path.getmtime(f1) >= os.path.getmtime(f2))
@@ -577,7 +578,7 @@ def usage():
 
 def init():
     """Initialize variables."""
-    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE, _DRY_RUN, logger
+    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE, _DRY_RUN, logger, _FORCE
 
     # hack to allow arguments to be passed after the magic #! (they are passed as a single arg)
     if len(sys.argv) > 1:
@@ -586,8 +587,8 @@ def init():
         argv = sys.argv[1:]
         
     try:
-        opts, args = getopt.getopt(argv, "dnhH:r:R:D:V:s",
-                                   ["debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var=', 'syslog'])
+        opts, args = getopt.getopt(argv, "fdnhH:r:R:D:V:s",
+                                   ["force", "debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var=', 'syslog'])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -607,6 +608,8 @@ def init():
             sys.exit()
         elif o in ("-d", "--debug"):
             _DEBUG=True
+        elif o in ("-f", "--force"):
+            _FORCE=True
         elif o in ("-n", "--dry-run"):
             _DRY_RUN = True
         elif o in ("-H", "--hostname"):

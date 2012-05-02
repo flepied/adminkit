@@ -529,7 +529,9 @@ def finalize():
             fd = open(_PIDFILE[p])
             content = fd.read(-1)
             fd.close()
-            if content[-1] == '\n':
+            if len(content) == 0:
+                restart = True
+            elif content[-1] == '\n':
                 content = content[:-1]
             if not os.path.exists('/proc/' + content):
                 restart = True

@@ -38,6 +38,7 @@ import pwd
 import grp
 import logging
 import logging.handlers
+import codecs
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -221,7 +222,7 @@ def copyfile(src, dst, variables, mode, uid, gid):
         os.utime(dst, None)
         return False
     else:
-        fd = open(dst, 'w')
+        fd = codecs.open(dst, 'w', 'utf-8')
         os.chmod(dst, mode)
         if uid != -1 or gid != -1:
             os.chown(dst, uid, gid)

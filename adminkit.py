@@ -400,6 +400,8 @@ def finalize():
                  'deactivate_service': deactivate_service,
                  }
     
+    add_var('roles', _ROLES)
+    
     for c in _ROLES:
         logger.debug('Loading role %s', c)
         f = find_file(c, path)

@@ -116,6 +116,13 @@ testFuture()
     clean_result
 }
 
+testNagios()
+{
+    run_adminkit test10
+    assertEquals 'error processing global directive for Nagios' $? 0
+    clean_result
+}
+
 . /usr/share/shunit2/shunit2
 
 # tests.sh ends here

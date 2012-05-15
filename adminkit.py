@@ -259,10 +259,12 @@ def run_once(command):
     """Add a command to be run once to the global list."""
     _ONCE.append(command)
 
-def files_to_command(command, *li):
-    """Register regular expressions on modified files to run the command."""
-    for regexp in li:
-        _COMMANDS[re.compile(regexp)] = command
+def files_to_command(command, *files):
+    """Add files to the global list and register these files to run
+    the command when modified."""
+    add_files(*files)
+    for file_ in files:
+        _COMMANDS[file_] = command
 
 def is_newer(f1, f2):
     """Check if a f1 is newer than f2."""
@@ -514,15 +516,14 @@ def finalize():
                             _RET = 1
         except KeyError:
             pass
-        for r in _COMMANDS.keys():
-            if r.search(f):
-                cmd = _COMMANDS[r]
-                logger.info('launching command %s for %s', cmd, f)
-                if not _DRY_RUN:
-                    status, output = commands.getstatusoutput(cmd)
-                    if status != 0:
-                        logger.error('Error reloading %s:\n%s', cmd, output)
-                        _RET = 1
+        if f in _COMMANDS.keys():
+            cmd = _COMMANDS[f]
+            logger.info('launching command %s for %s', cmd, f)
+            if not _DRY_RUN:
+                status, output = commands.getstatusoutput(cmd)
+                if status != 0:
+                    logger.error('Error reloading %s:\n%s', cmd, output)
+                    _RET = 1
                     
     for p in _PIDFILE.keys():
         restart = False

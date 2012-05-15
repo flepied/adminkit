@@ -111,8 +111,9 @@ directory. Role files can use the following directives:
 ``run_once(<command>)``
   runs the ``<command>`` only once.
 
-``files_to_command(<command>, <regexp>, ...)``
-  when a file matching ``<regexp>`` is modified, run the ``<command>``.
+``files_to_command(<command>, <file1>, ...)``
+  defines files that are added like the ``add_files directive`` but in
+  addition, the command is launched if any of the files are copied.
 
 ``install_pkg(<pkg1>, <pkg2>...)``
   install packages using the system packaging tool. Only apt-get and urpmi

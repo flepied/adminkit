@@ -31,7 +31,11 @@ class TestPlanTest(unittest.TestCase):
     def setUp(self):
         self.p = plan.Plan()
         self.p.add_var('hostname', 'host')
-        
+
+    def test_domain(self):
+        self.p.define_domain('domain')
+        self.assertEqual('domain', self.p.default_domain())
+
     def test_plan(self):
         self.assertTrue(self.p)
 
@@ -47,6 +51,21 @@ class TestPlanTest(unittest.TestCase):
     def test_add_var(self):
         self.p.add_var('var', 'value')
         self.assertEqual(self.p.get_var('var'), 'value')
+
+    def test_add_var_host(self):
+        self.p.add_var_host('host', 'var', 'value')
+        self.assertEqual(self.p.get_var('var'), 'value')
+
+    def test_add_to_list(self):
+        self.p.add_to_list('var', 'value')
+        self.assertEqual(self.p.get_var('var'), ['value', ])
+
+    def test_add_to_list_host(self):
+        self.p.add_to_list_host('host', 'var', 'value')
+        self.assertEqual(self.p.get_var('var'), ['value', ])
+
+    def test_get_var(self):
+        self.assertEqual(self.p.get_var('var'), None)
 
     def test_check_host(self):
         self.assertTrue(self.p.check_host('host'))

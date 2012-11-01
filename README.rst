@@ -18,4 +18,4 @@ Tests
 -----
 
 To run the tests via make test, you need `shunit2
-<http://code.google.com/p/shunit2/>`_ installed .
+<http://code.google.com/p/shunit2/>`_ and fakeroot installed .

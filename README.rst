@@ -1,6 +1,9 @@
 AdminKit
 ========
 
+.. image:: https://travis-ci.org/flepied/adminkit.png
+   :target: https://travis-ci.org/flepied/adminkit
+   
 Description
 -----------
 

@@ -1,2 +1,2 @@
-add_dirs('/etc-{{ domainname }}')
-add_files('/etc-{{ domainname }}/test.{{ hostname }}')
+add_dirs('/etc-{{ hostname }}')
+add_files('/etc-{{ hostname }}/test.{{ hostname }}')

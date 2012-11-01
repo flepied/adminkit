@@ -64,7 +64,7 @@ testPkg()
 testInclude()
 {
     run_adminkit testInclude
-    cmp $PWD/dest/etc/p /etc/passwd
+    cmp $PWD/dest/etc/p /etc/hosts
     assertEquals 'copy is different' $? 0
     cmp $PWD/files/etc/toto $PWD/dest/etc/test
     assertEquals 'copy is different' $? 0
@@ -82,7 +82,7 @@ testFilename()
 {
     run_adminkit testFilename
     assertEquals 'error processing global directive' $? 0
-    [ -f $PWD/dest/etc-`hostname -d`/test.`hostname` ]
+    [ -f $PWD/dest/etc-`hostname`/test.`hostname` ]
     assertEquals 'file not created with the right name' $? 0
     clean_result
 }

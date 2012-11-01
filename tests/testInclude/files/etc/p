@@ -1,2 +1,2 @@
-{% include '/etc/passwd' %}
+{% include '/etc/hosts' %}
 

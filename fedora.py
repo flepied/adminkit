@@ -1,10 +1,10 @@
 #---------------------------------------------------------------
 # Project         : adminkit
 # File            : fedora.py
-# Copyright       : (C) 2012 by 
+# Copyright       : (C) 2012 Frederic Lepied
 # Author          : Frederic Lepied
 # Created On      : Thu Nov  1 00:12:55 2012
-# Purpose         : 
+# Purpose         : Fedora specific interfaces
 #---------------------------------------------------------------
 
 import commands

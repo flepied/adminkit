@@ -3,7 +3,7 @@
 # Project         : adminkit
 # File            : adminkit
 # Copyright       : (C) 2010 Splitted-Desktop Systems
-#                   (C) 2010 Frederic Lepied
+#                   (C) 2010,2012 Frederic Lepied
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,26 +29,30 @@ import os
 import sys
 
 try:
-    from adminkit import *
+    from adminkit import init, finalize
+    from plan import Plan
 except:
     sys.path = ['/usr/share/adminkit'] + sys.path
-    from adminkit import *
+    from adminkit import init, finalize
+    from plan import Plan
 
-CFGFILE = init()
+plan = Plan()
+
+CFGFILE = init(plan)
 
 # safety check
 if not os.path.isfile(CFGFILE):
     sys.exit(0)
 
-globals = {'define_domain': define_domain,
-           'add_var': add_var_host,
-           'add_to_list': add_to_list_host,
-           'get_var': get_var,
-           'add_roles': add_roles,
+globals = {'define_domain': plan.define_domain,
+           'add_var': plan.add_var_host,
+           'add_to_list': plan.add_to_list_host,
+           'get_var': plan.get_var,
+           'add_roles': plan.add_roles,
            }
 
 execfile(CFGFILE, globals)
 
-sys.exit(finalize())
+sys.exit(finalize(plan))
 
 # adminkit ends here

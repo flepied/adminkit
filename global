@@ -2,7 +2,7 @@
 #---------------------------------------------------------------
 # Project         : adminkit
 # File            : global
-# Copyright       : (C) 2011 by Frederic Lepied
+# Copyright       : (C) 2011,2012 by Frederic Lepied
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,10 +37,14 @@ except ImportError:
     sys.path = ['/usr/share/adminkit'] + sys.path
     import adminkit
 
+from plan import Plan
+
 SUBDIR = sys.argv[1]
 del sys.argv[1]
 
-CFGFILE = adminkit.init()
+plan = Plan()
+
+CFGFILE = adminkit.init(plan)
 
 # safety check
 if not os.path.isfile(CFGFILE):
@@ -51,12 +55,12 @@ if not os.path.isfile(CFGFILE):
 _HOSTS = []
 _ROLES = {}
 
-define_domain = adminkit.define_domain
+define_domain = plan.define_domain
 
 def check_host(host):
     """Add host to the list of known hosts."""
-    if '.' not in host and adminkit.default_domain():
-        host = host + '.' + adminkit.default_domain()
+    if '.' not in host and plan.default_domain():
+        host = host + '.' + plan.default_domain()
 
     if host not in _HOSTS:
         _HOSTS.append(host)
@@ -66,14 +70,14 @@ def check_host(host):
 def add_var_host(host, name, val):
     """Define a variable named name to the value val if host is the current host."""
     check_host(host)
-    adminkit.add_var_host(host, name, val)
+    plan.add_var_host(host, name, val)
     
 def add_to_list_host(host, name, val):
     """Add val to the list named name if host if the current host."""
     check_host(host)
-    adminkit.add_to_list_host(host, name, val)
+    plan.add_to_list_host(host, name, val)
     
-get_var = adminkit.get_var
+get_var = plan.get_var
 
 def add_roles(h, *rls):
     """Add roles for the host."""

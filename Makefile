@@ -4,6 +4,7 @@ all:
 	cd docs; make html
 
 test:
+	nosetests $(NOSETESTS_OPT) test_*.py
 	./tests/tests.sh
 
 check:

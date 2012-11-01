@@ -1,76 +1,64 @@
-adminkit (0.13) unstable; urgency=low
-
-  * added -f option to force the copy of files.
-  * added -s option to output messages to syslog.
-  * added -n option to not launch commands during run.
-  * added the activate_service and deactivate_service role commands.
-  * fixed files_to_command.
-  * allow to customize locations with /etc/update-adminkit.conf.
-  * allow add_var to be a nested name.
-
- -- Frederic Lepied <flepied@gmail.com>  Mon, 03 Oct 2011 22:14:57 +0100
-
 adminkit (0.12) unstable; urgency=low
 
   * allow expansion of variables in file and dir names.
   * initial support to handle to work on the whole config through
     global_conf.
 
- -- Frederic Lepied <flepied@gmail.com>  Sun, 20 Feb 2011 19:20:57 +0100
+ -- Frederic Lepied <fred@lepied.com>  Sun, 20 Feb 2011 19:20:57 +0100
 
 adminkit (0.11) unstable; urgency=low
 
   * first try to implement system specifics calls. Only packaging install
   for Debian, Ubuntu and Mandriva.
 
- -- Frederic Lepied <flepied@gmail.com>  Mon, 06 Dec 2010 22:19:03 +0100
+ -- Frederic Lepied <fred@lepied.com>  Mon, 06 Dec 2010 22:19:03 +0100
 
 adminkit (0.10) unstable; urgency=low
 
   * added install_pkg function for roles
 
- -- Frederic Lepied <flepied@gmail.com>  Sun, 05 Dec 2010 22:12:52 +0100
+ -- Frederic Lepied <fred@lepied.com>  Sun, 05 Dec 2010 22:12:52 +0100
 
 adminkit (0.9) unstable; urgency=low
 
   * add tests
   * add support for uid and gid on files
 
- -- Frederic Lepied <flepied@gmail.com>  Sat, 04 Dec 2010 23:40:02 +0100
+ -- Frederic Lepied <fred@lepied.com>  Sat, 04 Dec 2010 23:40:02 +0100
 
 adminkit (0.8) unstable; urgency=low
 
   * if a pid file doesn't exist, don't restart the service as it means the
     service has been stopped manually.
 
- -- Frederic Lepied <flepied@gmail.com>  Sat, 13 Nov 2010 21:25:23 +0100
+ -- Frederic Lepied <fred@lepied.com>  Sat, 13 Nov 2010 21:25:23 +0100
 
 adminkit (0.7) unstable; urgency=low
 
   * copyfile: write a new file only if the content has changed
   * get_var: return None if a variable is not defined
   
- -- Frederic Lepied <flepied@gmail.com>  Sun, 17 Oct 2010 11:59:09 +0200
+ -- Frederic Lepied <fred@lepied.com>  Sun, 17 Oct 2010 11:59:09 +0200
 
 adminkit (0.6) unstable; urgency=low
 
   * to calculate if a file needs to be regenerated checks also if the
     variables have changed.
 
- -- Frederic Lepied <flepied@gmail.com>  Tue, 12 Oct 2010 08:27:46 +0200
+ -- Frederic Lepied <fred@lepied.com>  Tue, 12 Oct 2010 08:27:46 +0200
 
 adminkit (0.5) unstable; urgency=low
 
   * added run_once and files_to_command functions for roles
 
- -- Frederic Lepied <flepied@gmail.com>  Sun, 10 Oct 2010 14:06:12 +0200
+ -- Frederic Lepied <fred@lepied.com>  Sun, 10 Oct 2010 14:06:12 +0200
 
 adminkit (0.4) unstable; urgency=low
 
   * switch to jinja2 for the templating engine to have a more powerful
     engine (loop...)
 
- -- Frederic Lepied <flepied@gmail.com>  Sat, 09 Oct 2010 23:19:53 +0200
+ -- Frederic Lepied <fred@lepied.com>  Sat, 09 Oct 2010 23:19:53 +0200
 
 adminkit (0.3) unstable; urgency=low
 
@@ -78,13 +66,13 @@ adminkit (0.3) unstable; urgency=low
   * make the variable manipulation functions available to the roles too
   * put back the files in /var/lib/adminkit
 
- -- Frederic Lepied <flepied@gmail.com>  Sat, 09 Oct 2010 21:13:04 +0200
+ -- Frederic Lepied <fred@lepied.com>  Sat, 09 Oct 2010 21:13:04 +0200
 
 adminkit (0.2) unstable; urgency=low
 
   * put config files in /etc/adminkit
 
- -- Frederic Lepied <flepied@gmail.com>  Thu, 07 Oct 2010 22:10:26 +0200
+ -- Frederic Lepied <fred@lepied.com>  Thu, 07 Oct 2010 22:10:26 +0200
 
 adminkit (0.1) unstable; urgency=low
 

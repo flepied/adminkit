@@ -36,17 +36,12 @@ import imp
 import hashlib
 import pwd
 import grp
-import logging
-import logging.handlers
-import codecs
 
 from jinja2 import Environment, FileSystemLoader
 
 STRING_TYPE = type('e')
 
 _DEBUG = False
-_DRY_RUN = False
-_FORCE = False
 _RET = 0
 
 _ENV = None
@@ -61,8 +56,7 @@ _DEST = '/'
 _OS = False
 _FILES = []
 _DIRS = []
-_FILES_FOR_SERVICES = {}
-_SERVICES = []
+_SERVICES = {}
 _SYSTEM = ''
 _CODE = ''
 _DEFAULT_DOMAIN = False
@@ -74,11 +68,6 @@ _COMMANDS = {}
 _ONCE_DIR = os.path.join(_ROOT, 'once')
 _VARS_FILE = os.path.join(_ROOT, 'vars')
 _PKGS = []
-
-##################################################
-# Logging config
-##################################################
-logger = None
 
 #######################################################################################
 # Accessor needed by external modules
@@ -125,27 +114,14 @@ def check_host(host):
     
     return (host == _HOST)
     
-def add_var_host(host, name, *val):
+def add_var_host(host, name, val):
     """Define a variable named name to the value val if host is the current host."""
     if check_host(host):
-        add_var(name, *val)
+        add_var(name, val)
 
-ARRAY_TYPE = type({})
-
-def add_to(tab, *val):
-    """Helper function for add_var."""
-    if len(val) == 1:
-        return val[0]
-    else:
-        try:
-            tab[val[0]] = add_to(tab[val[0]], *val[1:])
-        except:
-            tab[val[0]] = add_to({}, *val[1:])
-        return tab
-
-def add_var(*val):
+def add_var(name, val):
     """Define a variable named name to the value val."""
-    add_to(_VARS, *val)
+    _VARS[name] = val
     
 def add_to_list_host(host, name, val):
     """Add val to the list named name if host if the current host."""
@@ -222,7 +198,7 @@ def copyfile(src, dst, variables, mode, uid, gid):
         os.utime(dst, None)
         return False
     else:
-        fd = codecs.open(dst, 'w', 'utf-8')
+        fd = open(dst, 'w')
         os.chmod(dst, mode)
         if uid != -1 or gid != -1:
             os.chown(dst, uid, gid)
@@ -241,9 +217,9 @@ the service."""
     add_files(*files)
     for path in files:
         try:
-            _FILES_FOR_SERVICES[path] = _FILES_FOR_SERVICES[path] + [service]
+            _SERVICES[path] = _SERVICES[path] + [service]
         except KeyError:
-            _FILES_FOR_SERVICES[path] = [service]
+            _SERVICES[path] = [service]
 
 def add_dirs(*dirs):
     """Add directories to the global list."""
@@ -259,19 +235,17 @@ def run_once(command):
     """Add a command to be run once to the global list."""
     _ONCE.append(command)
 
-def files_to_command(command, *files):
-    """Add files to the global list and register these files to run
-    the command when modified."""
-    add_files(*files)
-    for file_ in files:
-        _COMMANDS[file_] = command
+def files_to_command(command, *li):
+    """Register regular expressions on modified files to run the command."""
+    for regexp in li:
+        _COMMANDS[re.compile(regexp)] = command
 
 def is_newer(f1, f2):
     """Check if a f1 is newer than f2."""
-    if _FORCE or not os.path.exists(f2):
+    if not os.path.exists(f2):
         return True
     else:
-        return (os.path.getmtime(f1) >= os.path.getmtime(f2))
+        return (os.path.getmtime(f1) > os.path.getmtime(f2))
 
 def check_vars(variables, path):
     '''checks that vars has not changed. A checksum is compared to the content
@@ -312,7 +286,7 @@ def install_pkg(*pkgs):
 
 def global_conf(conf):
     """Process the config file again with another driver called global."""
-    (path, _name) = os.path.split(os.path.realpath(sys.argv[0]))
+    (path, _name) = os.path.split(sys.argv[0])
     if path != '':
         cmd = '%s/global ' % path
     else:
@@ -320,34 +294,24 @@ def global_conf(conf):
     
     cmd = cmd + conf + ' ' + ' '.join(sys.argv[1:])
     
-    logger.debug('Global config through %s', cmd)
-    
+    if _DEBUG:
+        print 'Global config through', cmd
+        
     (res, out) = commands.getstatusoutput(cmd)
     if res != 0:
         global _RET
-        logger.error('Error running "%s":\n%s', cmd, out)
+        print 'Error running "%s":' % cmd
+        print out
         _RET = 1
     else:
-        logger.info(out)
+        print out,
         
     return res
 
-def expand_variables(s):
+def expand_variables(str):
     """Expand variable in the string using jinja2."""
-    return _ENV.from_string(s).render(_VARS)
+    return _ENV.from_string(str).render(_VARS)
 
-def activate_service(name):
-    """Add the service to the list of services to be activated."""
-    global _SERVICES
-
-    _SERVICES.append((name, True))
-    
-def deactivate_service(name):
-    """Add the service to the list of services to be deactivated."""
-    global _SERVICES
-
-    _SERVICES.append((name, False))
-    
 def finalize():
     """Do the actual action that were registered for the host."""
 
@@ -377,19 +341,18 @@ def finalize():
     _ENV = Environment(loader = FileSystemLoader([os.path.join(_ROOT, 'files'), '/']))
     
     if _DEBUG:
-        logger.debug('PATH -> %s', path)
+        print 'PATH ->', path
         for c in _VARS.keys():
-            logger.debug('%s -> %s', c, _VARS[c])
-        logger.debug('ROLES -> %s', _ROLES)
-        logger.debug('ROOT -> %s', _ROOT)
-        logger.debug('DEST -> %s', _DEST)
-        logger.debug('VARS_FILE -> %s', _VARS_FILE)
-        logger.debug('ONCE_DIR -> %s', _ONCE_DIR)
+            print c, '->', _VARS[c]
+        print 'ROLES ->', _ROLES
+        print 'ROOT ->', _ROOT
+        print 'DEST ->', _DEST 
+        print 'VARS_FILE ->', _VARS_FILE
+        print 'ONCE_DIR ->', _ONCE_DIR
        
     # exported functions to be used in role files
     functions = {'add_files': add_files,
                  'files_for_service': files_for_service,
-                 'files_to_command': files_to_command,
                  'check_service_by_pidfile': check_service_by_pidfile,
                  'check_perms': check_perms,
                  'add_dirs': add_dirs,
@@ -399,51 +362,51 @@ def finalize():
                  'run_once': run_once,
                  'install_pkg': install_pkg,
                  'global_conf': global_conf,
-                 'activate_service': activate_service,
-                 'deactivate_service': deactivate_service,
                  }
     
-    add_var('roles', _ROLES)
-    
     for c in _ROLES:
-        logger.debug('Loading role %s', c)
+        if _DEBUG:
+            print 'Loading role', c
         f = find_file(c, path)
         if f:
             execfile(f, functions)
         else:
-            logger.error('No such role %s in %s', c, ':'.join(path))
+            print 'No such role', c, 'in', ':'.join(path)
             _RET = 1
     
-    logger.debug(_ENV.from_string('hostname is {{ hostname }}').render(_VARS))
-    logger.debug('FILES %s', _FILES)
-    logger.debug('SERVICES %s', _SERVICES)
-    logger.debug('FILES_FOR_SERVICES %s', _FILES_FOR_SERVICES)
-    logger.debug('VARIABLES %s', _VARS)
-    logger.debug('ONCE %s', _ONCE)
-    logger.debug('PKGS %s', _PKGS)
+    if _DEBUG:
+        print _ENV.from_string('hostname is {{ hostname }}').render(_VARS)
+        print 'FILES', _FILES
+        print 'SERVICES', _SERVICES
+        print 'VARIABLES', _VARS
+        print 'ONCE', _ONCE
+        print 'PKGS', _PKGS
 
     # manage pkgs
     if len(_PKGS) > 0:
         installed_pkgs = system.get_packages()
         for p in _PKGS:
             if p in installed_pkgs:
-                logger.debug('%s already installed', p)
+                if _DEBUG:
+                    print p, 'already installed'
             else:
                 status, output = system.install_package(p)
                 if status == 0:
-                    logger.info('installed package %s', p)
+                    print 'installed package', p
                 else:
-                    logger.error('problems installing package % :\n%s', p, output)
+                    print 'problems installing package', p, ':'
+                    print output
                     _RET = 1
 
     # Managing directories
     for path in _DIRS:
         d = expand_variables(os.path.join(_DEST, path[1:]))
         if not os.path.isdir(d):
-            logger.info('creating directory %s', d)
+            print 'creating directory', d
             os.makedirs(d)
         else:
-            logger.debug('%s already exists', d)
+            if _DEBUG:
+                print d, 'already exists'
             
     # Managing files
     check_vars(_VARS, _VARS_FILE)
@@ -459,13 +422,13 @@ def finalize():
                 try:
                     uid = pwd.getpwnam(f[2]).pw_uid
                 except KeyError:
-                    logger.error('Unable to find uid for %s', f[2])
+                    print 'Unable to find uid for', f[2]
                     _RET = 1
             if len(f) >= 4 and f[3] != None:
                 try:
                     gid = grp.getgrnam(f[3]).gr_gid
                 except KeyError:
-                    logger.error('Unable to find gid for %s', f[3])
+                    print 'Unable to find gid for', f[3]
                     _RET = 1
             f = f[0]
                 
@@ -475,56 +438,51 @@ def finalize():
             if is_newer(l, t) or is_newer(_VARS_FILE, t):
                 if copyfile(l, t, _VARS, mode, uid, gid):
                     modified.append(f)
-                    logger.info('copied %s to %s', l, t)
+                    print 'copied', l, 'to', t
                 else:
-                    logger.info('touched %s', t)
+                    print 'touched', t
             else:
-                logger.debug('%s not newer than %s', l, t)
+                if _DEBUG:
+                    print l, 'not newer than', t
         else:
-            logger.error('ERROR %s not found', f)
+            print 'ERROR', f, 'not found'
             _RET = 1
 
     for f in _PERMS:
         try:
             s = os.stat(f[0])
             if s[0] & 07777 != f[1]:
-                logger.info('Changing mode of %s from 0%o to 0%o', f[0], s[0] & 07777, f[1])
+                print 'Changing mode of %s from 0%o to 0%o' % (f[0], s[0] & 07777, f[1])
                 os.chmod(f[0], f[1])
         except:
-            logger.error('ERROR changing perms of %s:\n%s', f[0], sys.exc_info()[1])
+            print 'ERROR changing perms of', f[0], ':'
+            print sys.exc_info()[1]
             _RET = 1
-    
     # Managing services
-
-    for s in _SERVICES:
-        if s[1]:
-            system.activate_service(s[0], _DEBUG, _DRY_RUN)
-        else:
-            system.deactivate_service(s[0], _DEBUG, _DRY_RUN)
-            
     reloaded = []
     for f in modified:
         try:
-            for s in _FILES_FOR_SERVICES[f]:
+            for s in _SERVICES[f]:
                 if s not in reloaded:
                     reloaded.append(s)
-                    logger.info('reloading service %s', s)
-                    if not _DRY_RUN:
-                        status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
-                        if status != 0:
-                            logger.error('Error reloading %s:\n%s', s, output)
-                            _RET = 1
+                    print 'reloading service', s
+                    status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
+                    if status != 0:
+                        print 'Error reloading %s:' % s
+                        print output
+                        _RET = 1
+            for r in _COMMANDS.keys():
+                if r.search(f):
+                    cmd = _COMMANDS[r]
+                    print 'launching command', s, 'for', f
+                    status, output = commands.getstatusoutput(cmd)
+                    if status != 0:
+                        print 'Error reloading %s:' % cmd
+                        print output
+                        _RET = 1
         except KeyError:
             pass
-        if f in _COMMANDS.keys():
-            cmd = _COMMANDS[f]
-            logger.info('launching command %s for %s', cmd, f)
-            if not _DRY_RUN:
-                status, output = commands.getstatusoutput(cmd)
-                if status != 0:
-                    logger.error('Error reloading %s:\n%s', cmd, output)
-                    _RET = 1
-                    
+
     for p in _PIDFILE.keys():
         restart = False
         if not os.path.exists(_PIDFILE[p]):
@@ -533,31 +491,29 @@ def finalize():
             fd = open(_PIDFILE[p])
             content = fd.read(-1)
             fd.close()
-            if len(content) == 0:
-                restart = True
-            elif content[-1] == '\n':
+            if content[-1] == '\n':
                 content = content[:-1]
             if not os.path.exists('/proc/' + content):
                 restart = True
         if restart:
-            logger.info('Restarting service %s', p)
-            if not _DRY_RUN:
-                status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
-                if status != 0:
-                    logger.error('Error restarting %s:\n%s', p, output)
-                    _RET = 1
+            print 'Restarting service', p
+            status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
+            if status != 0:
+                print 'Error restarting %s:' % p
+                print output
+                _RET = 1
     for cmd in _ONCE:
         hsh = hashlib.sha1(cmd).hexdigest()
         path = os.path.join(_ONCE_DIR, hsh)
         if not os.path.exists(path):
-            logger.info('Running once %s', cmd)
-            if not _DRY_RUN:
-                status, output = commands.getstatusoutput(cmd)
-                if status == 0:
-                    open(path, 'w').close()
-                else:
-                    logger.error('Error running once %s:\n%s', cmd, output)
-                    _RET = 1
+            print 'Running once', cmd
+            status, output = commands.getstatusoutput(cmd)
+            if status == 0:
+                open(path, 'w').close()
+            else:
+                print 'Error running once %s:' % cmd
+                print output
+                _RET = 1
     return _RET
 
 def set_root(rt):
@@ -584,7 +540,7 @@ def usage():
 
 def init():
     """Initialize variables."""
-    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE, _DRY_RUN, logger, _FORCE
+    global _OS, _SHORT, _DOMAIN, _HOST, _SYSTEM, _DEBUG, _CODE
 
     # hack to allow arguments to be passed after the magic #! (they are passed as a single arg)
     if len(sys.argv) > 1:
@@ -593,8 +549,8 @@ def init():
         argv = sys.argv[1:]
         
     try:
-        opts, args = getopt.getopt(argv, "fdnhH:r:R:D:V:s",
-                                   ["force", "debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var=', 'syslog'])
+        opts, args = getopt.getopt(argv, "dhH:r:R:D:V:",
+                                   ["debug", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -605,19 +561,13 @@ def init():
     _HOST = socket.gethostname()
     _SYSTEM = os.uname()[0].lower()
     _CODE = detect_os_code()
-
-    syslog = False
     
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
             sys.exit()
         elif o in ("-d", "--debug"):
-            _DEBUG=True
-        elif o in ("-f", "--force"):
-            _FORCE=True
-        elif o in ("-n", "--dry-run"):
-            _DRY_RUN = True
+            _DEBUG = True
         elif o in ("-H", "--hostname"):
             _HOST = a
         elif o in ("-V", "--var"):
@@ -629,24 +579,9 @@ def init():
             set_root(a)
         elif o in ("-D", "--destdir"):
             set_dest(a)
-        elif o in ('-s', '--syslog'):
-            syslog = True
         else:
             assert False, "unhandled option"
 
-    logger = logging.getLogger("adminkit")
-    
-    if syslog:
-        h = logging.handlers.SysLogHandler('/dev/log', 'syslog')
-        f = logging.Formatter('adminkit[%(process)d]: %(message)s')
-        h.setFormatter(f)
-    else:
-        h = logging.StreamHandler()
-    logger.addHandler(h)
-    
-    if _DEBUG:
-        logger.setLevel(logging.DEBUG)
-        
     h = _HOST.split('.', 1)
     _SHORT = h[0]
     if len(h) > 1:

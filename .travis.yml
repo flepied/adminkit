@@ -1,0 +1,8 @@
+language: python
+python:
+  - "2.7"
+  - "2.6"
+# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+install: pip install jinja2; wget -O- http://shunit2.googlecode.com/files/shunit2-2.1.6.tgz | tar x; sed -i -e "s@/usr/share/shunit2/shunit2@$PWD/shunit2-2.1.6/src/shunit2@" tests/tests.sh
+# command to run tests, e.g. python setup.py test
+script:  make test

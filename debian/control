@@ -1,14 +1,13 @@
 Source: adminkit
 Section: unknown
 Priority: extra
-Maintainer: Frederic Lepied <flepied@gmail.com>
+Maintainer: Frederic Lepied <fred@lepied.com>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.7.3
-Homepage: http://www.lepied.com/fred/adminkit/
+Homepage: <insert the upstream URL, if relevant>
 
 Package: adminkit
 Architecture: all
 Depends: python, lsb-release, python-jinja2
-Description: System administration toolkit
- AdminKit is a tool to manage the configuration of systems via a high
- level description using roles.
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>

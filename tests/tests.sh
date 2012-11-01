@@ -10,7 +10,6 @@
 
 TOP=`dirname $0`
 ORG=`pwd`
-OPT=
 
 run_adminkit()
 {
@@ -21,13 +20,12 @@ run_adminkit()
     else
 	DRIVER=adminkit
     fi
-    fakeroot ../../$DRIVER $OPT -R $PWD/ -D $PWD/dest/ adminkit.conf
+    fakeroot ../../$DRIVER -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }
 
 clean_result()
 {
-    OPT=
     rm -rf $PWD/dest/*
     rm -rf $PWD/vars $PWD/top/vars $PWD/once
     cd $ORG
@@ -35,7 +33,7 @@ clean_result()
 
 testCopy()
 {
-    run_adminkit test1
+    run_adminkit testCopy
     cmp $PWD/files/etc/test $PWD/dest/etc/test
     assertEquals 'copy is different' $? 0
     touch -r $PWD/dest/etc/test $PWD/dest/ref
@@ -47,7 +45,7 @@ testCopy()
 
 testCopyWithSpecs()
 {
-    run_adminkit test2
+    run_adminkit testCopyWithSpecs
     [ -x $PWD/dest/etc/test ]
     assertEquals 'file is not executable' $? 0
     touch -r $PWD/dest/etc/test $PWD/dest/ref
@@ -59,13 +57,13 @@ testCopyWithSpecs()
 
 testPkg()
 {
-    run_adminkit test3
+    run_adminkit testPkg
     clean_result
 }
 
 testInclude()
 {
-    run_adminkit test4
+    run_adminkit testInclude
     cmp $PWD/dest/etc/p /etc/passwd
     assertEquals 'copy is different' $? 0
     cmp $PWD/files/etc/toto $PWD/dest/etc/test
@@ -75,54 +73,47 @@ testInclude()
 
 testGlobal()
 {
-    run_adminkit test5
+    run_adminkit testGlobal
     assertEquals 'error processing global directive' $? 0
     clean_result
 }
 
 testFilename()
 {
-    run_adminkit test6
+    run_adminkit testFilename
     assertEquals 'error processing global directive' $? 0
-    [ -d $PWD/dest/etc-`hostname -d` ]
+    [ -f $PWD/dest/etc-`hostname -d`/test.`hostname` ]
     assertEquals 'file not created with the right name' $? 0
     clean_result
 }
 
 testList()
 {
-    run_adminkit test7
+    run_adminkit testList
     assertEquals 'error processing add_to_list directive' $? 0
     clean_result
 }
 
-testVars()
-{
-    run_adminkit test8
-    assertEquals 'error processing add_to_list directive' $? 0
-    clean_result
-}
+if [ -r /usr/share/shunit2/shunit2 ]; then
+    SHUNIT2=/usr/share/shunit2/shunit2
+else
+    RELDIR=`dirname $0`
+    ABSDIR=`cd $RELDIR/..; pwd`
+    if [ -r "$ABSDIR/shunit2/shunit2" ]; then
+	SHUNIT2="$ABSDIR/shunit2/shunit2"
+    elif [ -r "$ABSDIR/shunit2/src/shunit2" ] ;then
+	SHUNIT2="$ABSDIR/shunit2/src/shunit2"
+    else
+	echo "Unable to find shunit2" 1>&2
+	exit 1
+    fi
+fi
 
-testFuture()
-{
-    OPT=-f
-    mkdir -p $TOP/test9/dest/etc/
-    rm -f $TOP/test9/dest/etc/test
-    touch $TOP/test9/vars
-    touch -t 202201010000 $TOP/test9/dest/etc/test
-    run_adminkit test9
-    cmp $PWD/dest/etc/test $PWD/files/etc/test
-    assertEquals 'error forcing copy from the future' $? 0
-    clean_result
-}
+if ! type fakeroot >& /dev/null; then
+    echo "Unable to find fakeroot" 1>&2
+    exit 1
+fi
 
-testNagios()
-{
-    run_adminkit test10
-    assertEquals 'error processing global directive for Nagios' $? 0
-    clean_result
-}
-
-. /usr/share/shunit2/shunit2
+. $SHUNIT2
 
 # tests.sh ends here

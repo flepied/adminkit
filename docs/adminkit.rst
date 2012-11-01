@@ -88,18 +88,10 @@ directory. Role files can use the following directives:
   checks if the service is still running else restart it for this
   role.
 
-``activate_service(<name>)``
-  activates the service ``<name>`` by registering it in the init scripts
-  and starting the service.
-  
-``deactivate_service(<name>)``
-  deactivates the service ``<name>`` by stopping the service and removing
-  it from the init scripts.
-  
 ``check_perms((<file>, <perm>), ...)``
   enforces permissions of files for this role.
 
-``add_var(<name>[, <name2>...],<value>)``
+``add_var(<name>, <value>)``
   define a variable.
 
 ``add_to_list(<name>, <value>)``
@@ -111,9 +103,8 @@ directory. Role files can use the following directives:
 ``run_once(<command>)``
   runs the ``<command>`` only once.
 
-``files_to_command(<command>, <file1>, ...)``
-  defines files that are added like the ``add_files directive`` but in
-  addition, the command is launched if any of the files are copied.
+``files_to_command(<command>, <regexp>, ...)``
+  when a file matching ``<regexp>`` is modified, run the ``<command>``.
 
 ``install_pkg(<pkg1>, <pkg2>...)``
   install packages using the system packaging tool. Only apt-get and urpmi
@@ -130,7 +121,7 @@ construct you want.
 Config files
 ------------
 
-The config files are in fact templates that can use variables. Some
+The config files are in fact templates taht can use variables. Some
 variables are automatically defined:
 
 ``hostname``
@@ -151,9 +142,6 @@ variables are automatically defined:
 ``oscode``
   operating system code name (i.e. lenny).
 
-``roles``
-  the list of configured roles.
-  
 You can also define variables in the main config file or in the role
 files using the ``add_var`` definitions.
 
@@ -162,7 +150,7 @@ Variables are used in the config files using the jinja2 conventions
 name of files or directories.
 
 You can have specialized version of the same file by using extensions
-taken from variables or role names. For example, if you are using a
+taken from variable or role names. For example, if you are using a
 file called ``/etc/config`` in your role file, adminkit will lookup
 ``/etc/config.<shortname>``, ``/etc/config.<hostname>``,
 ``/etc/config.<osname>``...

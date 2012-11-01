@@ -8,7 +8,6 @@
 #---------------------------------------------------------------
 
 import commands
-import glob
 
 class System:
     def get_packages(self):
@@ -19,27 +18,5 @@ class System:
     def install_package(self, pkg):
         status, output = commands.getstatusoutput('apt-get install -q -y %s' % pkg)
         return (status, output)
-
-    def activate_service(self, service, debug, dryrun):
-        if len(glob.glob('/etc/rc2.d/S*%s' % service)) == 0:
-            cmd = 'update-rc.d %s defaults; invoke-rc.d %s start' % (service, service)
-            print 'activating service', service, 'with', cmd
-            if not dryrun:
-                status, output = commands.getstatusoutput(cmd)
-                if debug:
-                    print output
-                return (status, output)
-        return (0, '')
-        
-    def deactivate_service(self, service, debug, dryrun):
-        if len(glob.glob('/etc/rc2.d/S*%s' % service)) != 0:
-            cmd = 'invoke-rc.d %s stop; update-rc.d -f %s remove' % (service, service)
-            print 'deactivating service', service, 'with', cmd
-            if not dryrun:
-                status, output = commands.getstatusoutput(cmd)
-                if debug:
-                    print output
-                return (status, output)
-        return (0, '')
-        
+    
 # debian.py ends here

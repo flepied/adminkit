@@ -27,7 +27,12 @@
 """
 
 import os
-import commands
+try:
+    import commands
+except ImportError:
+    import subprocess
+    commands = subprocess
+    
 import socket
 import sys
 import getopt
@@ -240,7 +245,7 @@ def manage_files(plan, strings):
         uid = -1
         gid = -1
         if type(f) == STRING_TYPE:
-            mode = 0644
+            mode = 0o644
         else:
             mode = f[1]
             if len(f) >= 3 and f[2] != None:
@@ -279,8 +284,8 @@ def manage_perms(plan):
     for f in plan.get_perms():
         try:
             s = os.stat(f[0])
-            if s[0] & 07777 != f[1]:
-                logger.info('Changing mode of %s from 0%o to 0%o', f[0], s[0] & 07777, f[1])
+            if s[0] & 0o7777 != f[1]:
+                logger.info('Changing mode of %s from 0%o to 0%o', f[0], s[0] & 0o7777, f[1])
                 os.chmod(f[0], f[1])
         except:
             logger.error('ERROR changing perms of %s:\n%s', f[0], sys.exc_info()[1])
@@ -484,7 +489,7 @@ def set_dest(dst):
 
 def usage():
     """Help message."""
-    print "%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-d|<config file>]" % sys.argv[0]
+    print("%s [-h|-H <hostname>|-V <variable:value>|-r <role>|-R <root>|-D <dest>|-d|-s|-n|-f|<config file>]" % sys.argv[0])
     
 # process command line
 
@@ -501,9 +506,9 @@ def init(plan):
     try:
         opts, args = getopt.getopt(argv, "fdnhH:r:R:D:V:s",
                                    ["force", "debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var=', 'syslog'])
-    except getopt.GetoptError, err:
+    except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage()
         sys.exit(2)
     

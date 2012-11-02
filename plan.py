@@ -60,8 +60,8 @@ class Plan(object):
     '''Plan stores the plan to be enforced later'''
     
     __metaclass__ = PlanMeta
-    __list__ = ('pkg', 'role', 'file', 'dir', 'action', 'perm', 'once')
-    __assoc__ = ('service', 'pidfile', 'command')
+    __list__ = ('pkg', 'role', 'file', 'dir', 'action', 'perm', 'once', 'service')
+    __assoc__ = ('file_for_service', 'pidfile', 'command')
     
     def __init__(self):
         for k in Plan.__list__:
@@ -88,14 +88,26 @@ class Plan(object):
         
         return (host == self.var['hostname'])
         
-    def add_var_host(self, host, name, val):
+    def add_var_host(self, host, name, *val):
         """Define a variable named name to the value val if host is the current host."""
         if self.check_host(host):
-            self.add_var(name, val)
+            self.add_var(name, *val)
+
+    def add_to(self, tab, *val):
+        """Helper function for add_var."""
+        if len(val) == 1:
+            return val[0]
+        else:
+            try:
+                tab[val[0]] = self.add_to(tab[val[0]], *val[1:])
+            except:
+                tab[val[0]] = self.add_to({}, *val[1:])
+            return tab
     
-    def add_var(self, name, val):
+
+    def add_var(self, *val):
         """Define a variable named name to the value val."""
-        self.var[name] = val
+        self.add_to(self.var, *val)
         
     def add_to_list_host(self, host, name, val):
         """Add val to the list named name if host if the current host."""
@@ -133,7 +145,10 @@ class Plan(object):
     the service."""
         self.add_files(*files)
         for path in files:
-            self.add_service(path, service)
+            try:
+                self.file_for_service[path].append(service)
+            except KeyError:
+                self.file_for_service[path] = [service, ]
     
     def add_dirs(self, *dirs):
         """Add directories to the global list."""
@@ -149,10 +164,12 @@ class Plan(object):
         """Add a command to be run once to the global list."""
         self.add_once(command)
     
-    def files_to_command(self, command, *li):
-        """Register regular expressions on modified files to run the command."""
-        for regexp in li:
-            self.add_command(re.compile(regexp), command)
+    def files_to_command(self, command, *files):
+        """Add files to the global list and register these files to run
+        the command when modified."""
+        self.add_files(*files)
+        for file_ in files:
+            self.add_command(file_, command)
 
     def check_service_by_pidfile(self, service, pidfile):
         """Add pidfile to the global checks for service."""
@@ -164,4 +181,12 @@ class Plan(object):
             if not p in self.get_pkgs():
                 self.add_pkg(p)
 
+    def activate_service(self, name):
+        """Add the service to the list of services to be activated."""
+        self.add_service((name, True))
+        
+    def deactivate_service(self, name):
+        """Add the service to the list of services to be deactivated."""
+        self.add_service((name, False))
+        
 # plan.py ends here

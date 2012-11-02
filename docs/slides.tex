@@ -1,0 +1,239 @@
+% small.tex
+\documentclass[xcolor=dvipsnames]{beamer}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[francais]{babel}
+\setbeamertemplate{items}[ball]
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamertemplate{navigation symbols}{}
+\useoutertheme{infolines}
+\author{Frédéric Lepied}
+\title{AdminKit}
+\usetheme{Madrid}
+\usepackage{listings}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Concepts}
+\begin{frame}{Introduction}
+
+What is AdminKit ?
+
+\begin{itemize}
+  \item a devops tool
+  \item in the same vein as cfengine, puppet, chef...
+  \item more in the spirit of cfengine V2 using the Python language
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Objectives}
+
+What AdminKit do ?
+
+\begin{itemize}
+  \item configure and manage a set of Linux systems.
+  \item maintain the configurations as defined.
+  \item KISS principle.
+\end{itemize}
+
+What AdminKit do not do ?
+
+\begin{itemize}
+  \item manage the distribution of files $\rightarrow$ you need to use a way to
+    distribute AdminKit files yourself: packages, version control
+    system, web site, gui...
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Concepts}
+
+\begin{itemize}
+  \item One central configuration file describing the roles for each
+    system you want to manage.
+  \item Role files describe what is needed for fulfill the roles (packages,
+    configuration files, services...).
+  \item Configuration files are templates to allow easy customization
+    and reuse.
+\end{itemize}
+
+\end{frame}
+
+\section{Details}
+\begin{frame}[fragile]{Central configuration}
+
+\begin{itemize}
+  \item Objective: define roles for all the systems and their
+    associated variables.
+  \item The central configuration file is stored under
+    \tt{/var/lib/adminkit/adminkit.conf}
+  \item It's a Python file so you can use conditionals, loops and functions...
+  \item Example:
+\lstset{language=Python,frame=single,numbers=left}
+\begin{lstlisting}
+define_domain('domain.com')
+add_roles('host1', 'smtpserver', 'imapserver')
+add_roles('host2', 'webserver')
+add_var('host1', 'ip', '192.168.0.1')
+add_var('host2', 'ip', '192.168.0.2')
+\end{lstlisting}
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Central configuration functions}
+
+\begin{description}
+  \item[define\_domain(<name>)] define the domain name for the hosts
+    used bellow this declaration.
+
+  \item[add\_roles(<host>, <name1>, ...)] adds roles for \tt{<host>}.
+
+  \item[add\_var(<host>, <name>, <value>)] define a variable for \tt{<host>}.
+
+  \item[add\_to\_list(<host>, <name>, <value>)] add a <value> to the
+    list \tt{<name>} for \tt{<host>}.
+
+  \item[get\_var(<name>)] return the value of variable \tt{<name>}.
+\end{description}
+
+\end{frame}
+
+\begin{frame}[fragile]{Role file}
+  Role files are stored under \tt{/var/lib/adminkit/roles/}
+\begin{itemize}
+  \item Objectives: define the files, services and packages to manage
+    for the role.
+  \item Exemple:
+\begin{lstlisting}
+activate_service('ntp')
+files_for_service('ntp', '/etc/ntp.conf')
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Role functions}
+
+\begin{itemize}
+  \item add\_files(<file desc>, <file desc> ...)
+
+  \item files\_for\_service(<service>, <file1>, <file2>...)
+
+  \item add\_dirs(<dir1>, <dir2> ...)
+
+  \item check\_service\_by\_pidfile(<service>)
+
+  \item activate\_service(<name>)
+  
+  \item deactivate\_service(<name>)
+  
+  \item check\_perms((<file>, <perm>), ...)
+
+  \item add\_var(<name>[, <name2>...],<value>)
+
+  \item add\_to\_list(<name>, <value>)
+
+  \item get\_var(<name>)
+
+  \item run\_once(<command>)
+
+  \item files\_to\_command(<command>, <file1>, ...)
+
+  \item install\_pkg(<pkg1>, <pkg2>...)
+
+  \item global\_conf(<subdir>)
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Config file}
+  Config files are stored under \tt{/var/lib/adminkit/files/}
+\begin{itemize}
+  \item Objectives: file templates for easy reuse.
+  \item jinja2 templates with access to all the variables defined by
+    the roles and the global config file.
+  \item the relative path under the root directory is the destination
+    filename.
+  \item Extract from \tt{/var/lib/adminkit/files/etc/ntp.conf} (will
+    go to \tt{/etc/ntp.conf}):
+\begin{lstlisting}
+{% for server in timeservers %}
+server {{ server }} iburst
+{% endfor %}
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Invoking}
+
+Single command to know:
+
+\begin{lstlisting}
+# adminkit
+\end{lstlisting}
+
+Interesting options:
+
+\begin{description}
+  \item[-d] provide debug information.
+  \item[-n] dry run.
+  \item[-s] log to syslog.
+\end{description}
+
+The execution is done in 2 steps:
+\begin{itemize}
+  \item compute what needs to be done.
+  \item execute changes to be able to do actions only once.
+\end{itemize}
+\end{frame}
+
+\section{Advanced usages}
+
+\begin{frame}[fragile]{Advanced usage: Global conf directive}
+
+\begin{itemize}
+  \item global\_conf is a role directive to be able to process the whole
+  configuration of your park on a system.
+  \item for example you want to generate Nagios files for all your servers automatically. You just have to declare this in your nagios role:
+\begin{lstlisting}
+global_conf('nagios')
+\end{lstlisting}
+        Then adminkit.conf will be read again by a special driver that
+        will launch adminkit for all the servers setting their roles
+        and using the root dir /var/lib/adminkit/nagios.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Advanced usage: update-adminkit.conf}
+\begin{itemize}
+  \item Allow to split configuration in multiple files. By default
+    lookup in /var/lib/adminkit/adminkit.conf.d/*.conf. Files are
+    copied in order.
+  \item Use the config file /etc/update-adminkit.conf to specify other
+    directories to lookup configuration parts using the TOPDIRS shell
+    variable. In these case, take files from
+    \$DIR/\{*.conf,files,roles\}. Template files are copied, roles and
+    conf files are concatenated in order from each directory.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Thanks}
+  \begin{center}
+    \fbox{\textbf{Questions ?}}
+  \end{center}
+\end{frame}
+
+\end{document}

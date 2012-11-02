@@ -72,6 +72,7 @@ class TestPlanTest(unittest.TestCase):
 
     def test_add_roles(self):
         self.p.add_roles('host', 'role1', 'role1', 'role2')
+        self.assertTrue(self.p.check_host('host'))
         self.assertEqual(['role1', 'role2'], self.p.get_roles())
 
     def test_add_files(self):
@@ -81,8 +82,8 @@ class TestPlanTest(unittest.TestCase):
     def test_files_for_service(self):
         self.p.files_for_service('serv', 'file1', 'file2')
         self.assertEqual(['file1', 'file2'], self.p.get_files())
-        self.assertEqual('serv', self.p.get_service('file1'))
-        self.assertEqual('serv', self.p.get_service('file2'))
+        self.assertEqual(['serv'], self.p.get_file_for_service('file1'))
+        self.assertEqual(['serv'], self.p.get_file_for_service('file2'))
 
     def test_add_dirs(self):
         self.p.add_dirs('dir1', 'dir2')

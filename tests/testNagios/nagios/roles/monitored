@@ -1,0 +1,2 @@
+files_to_command('echo nagios3 -v /etc/nagios3/nagios.cfg',
+                 '/etc/nagios3/conf.d/{{hostname}}.cfg')

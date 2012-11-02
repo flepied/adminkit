@@ -13,5 +13,11 @@ class System:
 
     def install_package(self, pkg):
         return (0, '')
-    
+
+    def activate_service(self, service, debug, dryrun):
+        return (0, '')
+        
+    def deactivate_service(self, service, debug, dryrun):
+        return (0, '')
+
 # generic.py ends here

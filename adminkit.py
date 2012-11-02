@@ -35,12 +35,17 @@ import imp
 import hashlib
 import pwd
 import grp
+import logging
+import logging.handlers
+import codecs
 
 from jinja2 import Environment, FileSystemLoader
 
 STRING_TYPE = type('e')
 
 _DEBUG = False
+_DRY_RUN = False
+_FORCE = False
 _RET = 0
 
 _ENV = None
@@ -65,6 +70,11 @@ def root():
 def dest():
     """Accessor."""
     return _DEST
+
+##################################################
+# Logging config
+##################################################
+logger = None
 
 #######################################################################################
 
@@ -126,7 +136,7 @@ def copyfile(src, dst, variables, mode, uid, gid):
         os.utime(dst, None)
         return False
     else:
-        fd = open(dst, 'w')
+        fd = codecs.open(dst, 'w', 'utf-8')
         os.chmod(dst, mode)
         if uid != -1 or gid != -1:
             os.chown(dst, uid, gid)
@@ -136,10 +146,10 @@ def copyfile(src, dst, variables, mode, uid, gid):
 
 def is_newer(f1, f2):
     """Check if a f1 is newer than f2."""
-    if not os.path.exists(f2):
+    if _FORCE or not os.path.exists(f2):
         return True
     else:
-        return (os.path.getmtime(f1) > os.path.getmtime(f2))
+        return (os.path.getmtime(f1) >= os.path.getmtime(f2))
 
 def check_vars(variables, path):
     '''checks that vars has not changed. A checksum is compared to the content
@@ -170,25 +180,23 @@ def import_module(c, path):
 
 def global_conf(conf):
     """Process the config file again with another driver called global."""
-    (path, _name) = os.path.split(sys.argv[0])
+    (path, _name) = os.path.split(os.path.realpath(sys.argv[0]))
     if path != '':
         cmd = '%s/global ' % path
     else:
         cmd = 'global '
     
     cmd = cmd + conf + ' ' + ' '.join(sys.argv[1:])
+
+    logger.debug('Global config through %s', cmd)
     
-    if _DEBUG:
-        print 'Global config through', cmd
-        
     (res, out) = commands.getstatusoutput(cmd)
     if res != 0:
         global _RET
-        print 'Error running "%s":' % cmd
-        print out
+        logger.error('Error running "%s":\n%s', cmd, out)
         _RET = 1
     else:
-        print out,
+        logger.info(out)
         
     return res
 
@@ -202,15 +210,13 @@ def manage_pkgs(plan, system):
         installed_pkgs = system.get_packages()
         for p in plan.pkg:
             if p in installed_pkgs:
-                if _DEBUG:
-                    print p, 'already installed'
+                logger.debug('%s already installed', p)
             else:
                 status, output = system.install_package(p)
                 if status == 0:
-                    print 'installed package', p
+                    logger.info('installed package %s', p)
                 else:
-                    print 'problems installing package', p, ':'
-                    print output
+                    logger.error('problems installing package % :\n%s', p, output)
                     return 1
     return 0
 
@@ -219,11 +225,10 @@ def manage_dirs(plan):
     for path in plan.get_dirs():
         d = expand_variables(os.path.join(_DEST, path[1:]), plan)
         if not os.path.isdir(d):
-            print 'creating directory', d
+            logger.info('creating directory %s', d)
             os.makedirs(d)
         else:
-            if _DEBUG:
-                print d, 'already exists'
+            logger.debug('%s already exists', d)
     return 0
 
 def manage_files(plan, strings):
@@ -242,13 +247,13 @@ def manage_files(plan, strings):
                 try:
                     uid = pwd.getpwnam(f[2]).pw_uid
                 except KeyError:
-                    print 'Unable to find uid for', f[2]
+                    logger.error('Unable to find uid for %s', f[2])
                     ret = 1
             if len(f) >= 4 and f[3] != None:
                 try:
                     gid = grp.getgrnam(f[3]).gr_gid
                 except KeyError:
-                    print 'Unable to find gid for', f[3]
+                    logger.error('Unable to find gid for %s', f[3])
                     ret = 1
             f = f[0]
                 
@@ -258,14 +263,13 @@ def manage_files(plan, strings):
             if is_newer(l, t) or is_newer(_VARS_FILE, t):
                 if copyfile(l, t, plan.var, mode, uid, gid):
                     modified.append(f)
-                    print 'copied', l, 'to', t
+                    logger.info('copied %s to %s', l, t)
                 else:
-                    print 'touched', t
+                    logger.info('touched %s', t)
             else:
-                if _DEBUG:
-                    print l, 'not newer than', t
+                logger.debug('%s not newer than %s', l, t)
         else:
-            print 'ERROR', f, 'not found'
+            logger.error('ERROR %s not found', f)
             ret = 1
     return ret, modified
 
@@ -276,43 +280,66 @@ def manage_perms(plan):
         try:
             s = os.stat(f[0])
             if s[0] & 07777 != f[1]:
-                print 'Changing mode of %s from 0%o to 0%o' % (f[0], s[0] & 07777, f[1])
+                logger.info('Changing mode of %s from 0%o to 0%o', f[0], s[0] & 07777, f[1])
                 os.chmod(f[0], f[1])
         except:
-            print 'ERROR changing perms of', f[0], ':'
-            print sys.exc_info()[1]
+            logger.error('ERROR changing perms of %s:\n%s', f[0], sys.exc_info()[1])
             ret = 1
     return ret
 
-def manage_services(plan, modified):
+def manage_services(plan, modified, system):
     """Manage services."""
     ret = 0
     
+    for s in plan.get_services():
+        if s[1]:
+            system.activate_service(s[0], _DEBUG, _DRY_RUN)
+        else:
+            system.deactivate_service(s[0], _DEBUG, _DRY_RUN)
+
     reloaded = []
     for f in modified:
         try:
-            for s in plan.get_service(f):
+            for s in plan.get_file_for_service(f):
                 if s not in reloaded:
                     reloaded.append(s)
-                    print 'reloading service', s
-                    status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
-                    if status != 0:
-                        print 'Error reloading %s:' % s
-                        print output
-                        ret = 1
+                    logger.info('reloading service %s', s)
+                    if not _DRY_RUN:
+                        status, output = commands.getstatusoutput('/etc/init.d/%s reload || /etc/init.d/%s restart' % (s, s))
+                        if status != 0:
+                            logger.error('Error reloading %s:\n%s', s, output)
+                            ret = 1
             for r in plan.command.keys():
                 if r.search(f):
                     cmd = plan.get_command(r)
-                    print 'launching command', s, 'for', f
-                    status, output = commands.getstatusoutput(cmd)
-                    if status != 0:
-                        print 'Error reloading %s:' % cmd
-                        print output
-                        ret = 1
+                    logger.info('launching command %s for %s', cmd, f)
+                    if not _DRY_RUN:
+                        status, output = commands.getstatusoutput(cmd)
+                        if status != 0:
+                            logger.error('Error reloading %s:\n%s', cmd, output)
+                            ret = 1
         except KeyError:
             pass
 
     return ret
+
+def manage_onces(plan):
+    """Manage commands that needs to be launched only once."""
+    ret = 0
+    for cmd in plan.get_onces():
+        hsh = hashlib.sha1(cmd).hexdigest()
+        path = os.path.join(_ONCE_DIR, hsh)
+        if not os.path.exists(path):
+            logger.info('Running once %s', cmd)
+            if not _DRY_RUN:
+                status, output = commands.getstatusoutput(cmd)
+                if status == 0:
+                    open(path, 'w').close()
+                else:
+                    logger.error('Error running once %s:\n%s', cmd, output)
+                    ret = 1
+    return ret
+
 
 def manage_pidfiles(plan):
     """Manage pid files to check that services are present else relaunch them."""
@@ -325,34 +352,19 @@ def manage_pidfiles(plan):
             fd = open(plan.get_pidfile(p))
             content = fd.read(-1)
             fd.close()
-            if content[-1] == '\n':
+            if len(content) == 0:
+                restart = True
+            elif content[-1] == '\n':
                 content = content[:-1]
             if not os.path.exists('/proc/' + content):
                 restart = True
         if restart:
-            print 'Restarting service', p
-            status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
-            if status != 0:
-                print 'Error restarting %s:' % p
-                print output
-                ret = 1
-    return ret
-
-def manage_onces(plan):
-    """Manage commands that needs to be launched only once."""
-    ret = 0
-    for cmd in plan.get_onces():
-        hsh = hashlib.sha1(cmd).hexdigest()
-        path = os.path.join(_ONCE_DIR, hsh)
-        if not os.path.exists(path):
-            print 'Running once', cmd
-            status, output = commands.getstatusoutput(cmd)
-            if status == 0:
-                open(path, 'w').close()
-            else:
-                print 'Error running once %s:' % cmd
-                print output
-                ret = 1
+            logger.info('Restarting service %s', p)
+            if not _DRY_RUN:
+                status, output = commands.getstatusoutput('/etc/init.d/%s restart' % (p,))
+                if status != 0:
+                    logger.error('Error restarting %s:\n%s', p, output)
+                    ret = 1
     return ret
 
 def init_system(plan):
@@ -383,18 +395,19 @@ def init_roles(plan):
     _ENV = Environment(loader = FileSystemLoader([os.path.join(_ROOT, 'files'), '/']))
     
     if _DEBUG:
-        print 'PATH ->', path
+        logger.debug('PATH -> %s', path)
         for c in plan.var.keys():
-            print c, '->', plan.get_var(c)
-        print 'ROLES ->', plan.get_roles()
-        print 'ROOT ->', _ROOT
-        print 'DEST ->', _DEST 
-        print 'VARS_FILE ->', _VARS_FILE
-        print 'ONCE_DIR ->', _ONCE_DIR
+            logger.debug('%s -> %s', c, plan.get_var(c))
+        logger.debug('ROLES -> %s', plan.get_roles())
+        logger.debug('ROOT -> %s', _ROOT)
+        logger.debug('DEST -> %s', _DEST)
+        logger.debug('VARS_FILE -> %s', _VARS_FILE)
+        logger.debug('ONCE_DIR -> %s', _ONCE_DIR)
        
     # exported functions to be used in role files
     functions = {'add_files': plan.add_files,
                  'files_for_service': plan.files_for_service,
+                 'files_to_command': plan.files_to_command,
                  'check_service_by_pidfile': plan.check_service_by_pidfile,
                  'check_perms': plan.check_perms,
                  'add_dirs': plan.add_dirs,
@@ -404,26 +417,29 @@ def init_roles(plan):
                  'run_once': plan.run_once,
                  'install_pkg': plan.install_pkg,
                  'global_conf': global_conf,
+                 'activate_service': plan.activate_service,
+                 'deactivate_service': plan.deactivate_service,
                  }
+
+    plan.add_var('roles', plan.get_roles())
     
     for c in plan.get_roles():
-        if _DEBUG:
-            print 'Loading role', c
+        logger.debug('Loading role %s', c)
         f = find_file(c, path)
         if f:
             execfile(f, functions)
         else:
-            print 'No such role', c, 'in', ':'.join(path)
+            logger.error('No such role %s in %s', c, ':'.join(path))
             ret = 1
     
-    if _DEBUG:
-        print _ENV.from_string('hostname is {{ hostname }}').render(plan.var)
-        print 'FILES', plan.get_files()
-        print 'SERVICES', plan.service
-        print 'VARIABLES', plan.var
-        print 'ONCE', plan.get_onces()
-        print 'PKGS', plan.get_pkgs()
-
+    logger.debug(_ENV.from_string('hostname is {{ hostname }}').render(plan.var))
+    logger.debug('FILES %s', plan.get_files())
+    logger.debug('SERVICES %s', plan.service)
+    logger.debug('FILES_FOR_SERVICES %s', plan.file_for_service)
+    logger.debug('VARIABLES %s', plan.var)
+    logger.debug('ONCE %s', plan.get_onces())
+    logger.debug('PKGS %s', plan.get_pkgs())
+    
     return ret, path, strings
 
 def finalize(plan):
@@ -442,7 +458,7 @@ def finalize(plan):
 
     ret += manage_perms(plan)
 
-    ret += manage_services(plan, modified)
+    ret += manage_services(plan, modified, system)
 
     ret += manage_pidfiles(plan)
 
@@ -474,7 +490,7 @@ def usage():
 
 def init(plan):
     """Initialize variables."""
-    global _DEBUG
+    global _DEBUG, _DRY_RUN, logger, _FORCE
 
     # hack to allow arguments to be passed after the magic #! (they are passed as a single arg)
     if len(sys.argv) > 1:
@@ -483,8 +499,8 @@ def init(plan):
         argv = sys.argv[1:]
         
     try:
-        opts, args = getopt.getopt(argv, "dhH:r:R:D:V:",
-                                   ["debug", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var='])
+        opts, args = getopt.getopt(argv, "fdnhH:r:R:D:V:s",
+                                   ["force", "debug", "dry-run", "help", "hostname=", 'role=', 'rootdir=', 'destdir=', 'var=', 'syslog'])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -495,13 +511,19 @@ def init(plan):
     _HOST = socket.gethostname()
     _SYSTEM = os.uname()[0].lower()
     _CODE = detect_os_code()
+
+    syslog = False
     
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
             sys.exit()
         elif o in ("-d", "--debug"):
-            _DEBUG = True
+            _DEBUG=True
+        elif o in ("-f", "--force"):
+            _FORCE=True
+        elif o in ("-n", "--dry-run"):
+            _DRY_RUN = True
         elif o in ("-H", "--hostname"):
             _HOST = a
         elif o in ("-V", "--var"):
@@ -513,9 +535,26 @@ def init(plan):
             set_root(a)
         elif o in ("-D", "--destdir"):
             set_dest(a)
+        elif o in ('-s', '--syslog'):
+            syslog = True
         else:
             assert False, "unhandled option"
 
+    logger = logging.getLogger("adminkit")
+    
+    if syslog:
+        h = logging.handlers.SysLogHandler('/dev/log', 'syslog')
+        f = logging.Formatter('adminkit[%(process)d]: %(message)s')
+        h.setFormatter(f)
+    else:
+        h = logging.StreamHandler()
+    logger.addHandler(h)
+    
+    if _DEBUG:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+    
     h = _HOST.split('.', 1)
     _SHORT = h[0]
     if len(h) > 1:

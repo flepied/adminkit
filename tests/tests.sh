@@ -10,6 +10,7 @@
 
 TOP=`dirname $0`
 ORG=`pwd`
+OPT=
 
 run_adminkit()
 {
@@ -20,12 +21,13 @@ run_adminkit()
     else
 	DRIVER=adminkit
     fi
-    fakeroot ../../$DRIVER -R $PWD/ -D $PWD/dest/ adminkit.conf
+    fakeroot ../../$DRIVER $OPT -R $PWD/ -D $PWD/dest/ adminkit.conf
     assertEquals "error running adminkit for $1" $? 0
 }
 
 clean_result()
 {
+    OPT=
     rm -rf $PWD/dest/*
     rm -rf $PWD/vars $PWD/top/vars $PWD/once
     cd $ORG
@@ -91,6 +93,26 @@ testList()
 {
     run_adminkit testList
     assertEquals 'error processing add_to_list directive' $? 0
+    clean_result
+}
+
+testFuture()
+{
+    OPT=-f
+    mkdir -p $TOP/testFuture/dest/etc/
+    rm -f $TOP/testFuture/dest/etc/test
+    touch $TOP/testFuture/vars
+    touch -t 202201010000 $TOP/testFuture/dest/etc/test
+    run_adminkit testFuture
+    cmp $PWD/dest/etc/test $PWD/files/etc/test
+    assertEquals 'error forcing copy from the future' $? 0
+    clean_result
+}
+
+testNagios()
+{
+    run_adminkit testNagios
+    assertEquals 'error processing global directive for Nagios' $? 0
     clean_result
 }
 

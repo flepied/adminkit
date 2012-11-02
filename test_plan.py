@@ -108,7 +108,15 @@ class TestPlanTest(unittest.TestCase):
     def test_install_pkg(self):
         self.p.install_pkg('pkg1', 'pkg2', 'pkg2')
         self.assertEqual(['pkg1', 'pkg2'], self.p.get_pkgs())
-        
+
+    def test_activate_service(self):
+        self.p.activate_service('serv')
+        self.assertEqual(('serv', True), self.p.get_services()[0])
+
+    def test_deactivate_service(self):
+        self.p.deactivate_service('serv')
+        self.assertEqual(('serv', False), self.p.get_services()[0])
+
 if __name__ == "__main__":
     unittest.main()
                                         
